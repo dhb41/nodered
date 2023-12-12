@@ -14,13 +14,14 @@
         "name": "Make API Call",
         "links": [],
         "x": 190,
-        "y": 180,
+        "y": 200,
         "wires": [
             [
                 "58be07d07f221de4"
             ]
         ],
-        "l": true
+        "l": true,
+        "info": "Valid input:\n\nmsg.payload = {\n    uri: \"\",\n    data: \"\",\n    method: \"\",\n    authentication: {\n        tokenId: \"\" // ID used to retrieve an existing token,\n        clientId: \"\",\n        clientSecret: \"\"\n    }\n}"
     },
     {
         "id": "f38dcdb7a260954a",
@@ -29,7 +30,7 @@
         "name": "link out 2",
         "mode": "return",
         "links": [],
-        "x": 1905,
+        "x": 2705,
         "y": 180,
         "wires": []
     },
@@ -56,8 +57,8 @@
                 "valueValue": "application/x-www-form-urlencoded"
             }
         ],
-        "x": 1390,
-        "y": 260,
+        "x": 930,
+        "y": 240,
         "wires": [
             [
                 "0d3cab8a78049634"
@@ -69,14 +70,15 @@
         "type": "function",
         "z": "9cbfefb5395ca356",
         "name": "Prep",
-        "func": "var msg2 = {\n    omsg: msg,\n    topic: msg.topic,\n    account: msg.payload.account,\n    headers: msg.payload.headers || {},\n    url: msg.payload.account.api.baseUrl + msg.payload.uri,\n    payload: msg.payload.data || {},\n    method: msg.payload.method || \"POST\",\n    tokenFlow: \"tokens.\" + msg.payload.account.account.code\n}\n\n//msg2.pageBackup = msg2\n//msg2.payloadBackup = msg2.payload\n\nreturn msg2;",
+        "func": "var msg2 = {\n    omsg: msg,\n    topic: msg.topic,\n    authentication: msg.payload.authentication,\n    headers: msg.payload.headers || {},\n    url: msg.payload.authentication.baseUrl + msg.payload.uri,\n    data: msg.payload.data || {},\n    method: msg.payload.method || \"POST\"\n}\n\nmsg2.payload = msg2.data\n\nvar token = msg2.authentication.tokenId || msg._msgid\nif (! /^tokens./.test(token) ) token = \"tokens.\" + token\nmsg2.authentication.tokenId = token\n\nif (flow.get(msg2.authentication.tokenId)) msg2.tokenExists = true\n\nif (! msg2.headers.accept) msg2.headers.accept = \"application/json\"\n\n//msg2.pageBackup = msg2\n//msg2.payloadBackup = msg2.payload\n\nreturn msg2;",
         "outputs": 1,
+        "timeout": "",
         "noerr": 0,
         "initialize": "",
         "finalize": "",
         "libs": [],
         "x": 350,
-        "y": 180,
+        "y": 200,
         "wires": [
             [
                 "ce0ef901bbebb9cb"
@@ -87,14 +89,12 @@
         "id": "ce0ef901bbebb9cb",
         "type": "switch",
         "z": "9cbfefb5395ca356",
-        "name": "Account Code Token?",
-        "property": "tokens",
-        "propertyType": "flow",
+        "name": "Valid Token ID?",
+        "property": "tokenExists",
+        "propertyType": "msg",
         "rules": [
             {
-                "t": "hask",
-                "v": "account.account.code",
-                "vt": "msg"
+                "t": "true"
             },
             {
                 "t": "else"
@@ -103,14 +103,14 @@
         "checkall": "true",
         "repair": false,
         "outputs": 2,
-        "x": 540,
-        "y": 180,
+        "x": 520,
+        "y": 200,
         "wires": [
             [
                 "9022f066a7dc573f"
             ],
             [
-                "081be4dc01c9ac41"
+                "a5b21ac49094bb38"
             ]
         ]
     },
@@ -119,20 +119,21 @@
         "type": "function",
         "z": "9cbfefb5395ca356",
         "name": "Get Token Expiration",
-        "func": "if (new Date() < new Date(flow.get(msg.tokenFlow).expires_timestamp)) {\n    return [msg, null];\n} else {\n    return [null, msg]\n}",
+        "func": "if (new Date() < new Date(flow.get(msg.authentication.tokenId).expires_timestamp)) {\n    return [msg, null];\n} else {\n    return [null, msg]\n}",
         "outputs": 2,
+        "timeout": "",
         "noerr": 0,
         "initialize": "",
         "finalize": "",
         "libs": [],
-        "x": 780,
+        "x": 760,
         "y": 160,
         "wires": [
             [
                 "77d8486683dab46d"
             ],
             [
-                "081be4dc01c9ac41"
+                "a5b21ac49094bb38"
             ]
         ]
     },
@@ -176,7 +177,7 @@
         "initialize": "",
         "finalize": "",
         "libs": [],
-        "x": 340,
+        "x": 360,
         "y": 80,
         "wires": [
             []
@@ -187,91 +188,18 @@
         "type": "function",
         "z": "9cbfefb5395ca356",
         "name": "Get New Token",
-        "func": "msg.url = msg.account.api.baseUrl + \"/oauth/token\"\n\nvar fields = [\n    \"client_id=\" + msg.clientId,\n    \"client_secret=\" + msg.payload,\n    \"grant_type=client_credentials\"\n]\nmsg.payload = fields.join(\"&\")\n\nreturn msg;",
+        "func": "var fields = [\n    \"client_id=\" + msg.authentication.clientId,\n    \"client_secret=\" + msg.authentication.clientSecret,\n    \"grant_type=client_credentials\"\n]\n\nvar msg2 = {\n    omsg: msg,\n    url: msg.authentication.baseUrl + \"/oauth/token\",\n    payload: fields.join(\"&\")\n}\nreturn msg2;",
         "outputs": 1,
+        "timeout": "",
         "noerr": 0,
         "initialize": "",
         "finalize": "",
         "libs": [],
-        "x": 1200,
-        "y": 260,
+        "x": 740,
+        "y": 240,
         "wires": [
             [
                 "b8d362535eec22b7"
-            ]
-        ]
-    },
-    {
-        "id": "dd5aa89e0e204f13",
-        "type": "function",
-        "z": "9cbfefb5395ca356",
-        "name": "Get Client ID",
-        "func": "var msg2 = {\n    omsg: msg,\n    account: msg.account,\n    payload: {\n        id: msg.account.api.clientIdKey\n    }\n}\nreturn msg2;",
-        "outputs": 1,
-        "noerr": 0,
-        "initialize": "",
-        "finalize": "",
-        "libs": [],
-        "x": 390,
-        "y": 260,
-        "wires": [
-            [
-                "e8bb79d7a42d8760"
-            ]
-        ]
-    },
-    {
-        "id": "e8bb79d7a42d8760",
-        "type": "link call",
-        "z": "9cbfefb5395ca356",
-        "name": "",
-        "links": [
-            "72843a7088b94338"
-        ],
-        "linkType": "static",
-        "timeout": "30",
-        "x": 580,
-        "y": 260,
-        "wires": [
-            [
-                "04ce67be1441841a"
-            ]
-        ]
-    },
-    {
-        "id": "04ce67be1441841a",
-        "type": "function",
-        "z": "9cbfefb5395ca356",
-        "name": "Get Client Secret",
-        "func": "msg.clientId = msg.payload\nmsg.payload = {\n    id: msg.account.api.clientSecretKey\n}\n\nreturn msg;",
-        "outputs": 1,
-        "noerr": 0,
-        "initialize": "",
-        "finalize": "",
-        "libs": [],
-        "x": 790,
-        "y": 260,
-        "wires": [
-            [
-                "d0569f66ae87f310"
-            ]
-        ]
-    },
-    {
-        "id": "d0569f66ae87f310",
-        "type": "link call",
-        "z": "9cbfefb5395ca356",
-        "name": "",
-        "links": [
-            "72843a7088b94338"
-        ],
-        "linkType": "static",
-        "timeout": "30",
-        "x": 1000,
-        "y": 260,
-        "wires": [
-            [
-                "a5b21ac49094bb38"
             ]
         ]
     },
@@ -280,17 +208,18 @@
         "type": "function",
         "z": "9cbfefb5395ca356",
         "name": "Save Token",
-        "func": "var token = msg.payload\nvar timestamp = new Date()\ntimestamp.setSeconds(timestamp.getSeconds() + token.expires_in)\n\ntoken.expires_timestamp = timestamp\nflow.set(msg.omsg.tokenFlow, token)\n\nreturn msg.omsg;",
+        "func": "var token = msg.payload\n\nnode.warn(\"new token: \" + token)\nif (! (token.fail && token.fail.length > 0)) {\n    var timestamp = new Date()\n    timestamp.setSeconds(timestamp.getSeconds() + token.expires_in)\n\n    token.expires_timestamp = timestamp\n    flow.set(msg.omsg.authentication.tokenId, token)\n}\n\nreturn msg.omsg;",
         "outputs": 1,
+        "timeout": "",
         "noerr": 0,
         "initialize": "",
         "finalize": "",
         "libs": [],
-        "x": 1570,
-        "y": 260,
+        "x": 1110,
+        "y": 240,
         "wires": [
             [
-                "30d04bcddfb7d349"
+                "77d8486683dab46d"
             ]
         ]
     },
@@ -299,45 +228,21 @@
         "type": "function",
         "z": "9cbfefb5395ca356",
         "name": "Add Authorization",
-        "func": "var token = flow.get(msg.tokenFlow)\nmsg.headers.authorization = token.token_type + \" \" + token.access_token\n\nmsg.payloadBackup = msg.payload\nmsg.headersBackup = msg.headers\n\nreturn msg;",
+        "func": "var token = flow.get(msg.authentication.tokenId)\nmsg.headers.authorization = token.token_type + \" \" + token.access_token\n\nmsg.payloadBackup = msg.payload\nmsg.headersBackup = msg.headers\n\nreturn msg;",
         "outputs": 1,
+        "timeout": "",
         "noerr": 0,
         "initialize": "",
         "finalize": "",
         "libs": [],
-        "x": 1030,
-        "y": 180,
+        "x": 1330,
+        "y": 200,
         "wires": [
             [
-                "1e9b825b6ea9931f"
+                "5ecf42f8ef6f2d81",
+                "eb8cccecc907a12c"
             ]
         ]
-    },
-    {
-        "id": "9320469a7ec1bcdc",
-        "type": "link in",
-        "z": "9cbfefb5395ca356",
-        "name": "Get New Token",
-        "links": [],
-        "x": 200,
-        "y": 260,
-        "wires": [
-            [
-                "dd5aa89e0e204f13"
-            ]
-        ],
-        "l": true
-    },
-    {
-        "id": "30d04bcddfb7d349",
-        "type": "link out",
-        "z": "9cbfefb5395ca356",
-        "name": "link out 4",
-        "mode": "return",
-        "links": [],
-        "x": 1695,
-        "y": 260,
-        "wires": []
     },
     {
         "id": "1e9b825b6ea9931f",
@@ -345,7 +250,7 @@
         "z": "9cbfefb5395ca356",
         "name": "",
         "method": "use",
-        "ret": "obj",
+        "ret": "txt",
         "paytoqs": "ignore",
         "url": "",
         "tls": "25f8f84a.4e7f98",
@@ -354,19 +259,13 @@
         "insecureHTTPParser": false,
         "authType": "",
         "senderr": false,
-        "headers": [
-            {
-                "keyType": "other",
-                "keyValue": "Content-Type",
-                "valueType": "other",
-                "valueValue": "application/json"
-            }
-        ],
-        "x": 1230,
-        "y": 180,
+        "headers": [],
+        "x": 1790,
+        "y": 200,
         "wires": [
             [
-                "791c869ee163e4c5"
+                "f78335b4b47e2d70",
+                "74f1c249007bcb56"
             ]
         ]
     },
@@ -375,35 +274,18 @@
         "type": "function",
         "z": "9cbfefb5395ca356",
         "name": "Clean Up",
-        "func": "var msg2 = msg.omsg\n\nif (msg.allResults && msg.payload.meta.pageSize !== msg.payload.totalCount) {\n    msg2.payload.data = msg.allResults.push(...msg.payload.data)\n} else {\n    msg2.payload = msg.payload\n}\nreturn msg2;",
+        "func": "var msg2 = msg.omsg\n\nif (msg.allResults && msg.payload.meta.pagination.pageSize !== msg.payload.meta.pagination.totalCount) {\n    msg.allResults.push(msg.payload)\n    msg2.payload = msg.allResults\n} else {\n    msg2.payload = msg.payload\n}\nreturn msg2;",
         "outputs": 1,
+        "timeout": "",
         "noerr": 0,
         "initialize": "",
         "finalize": "",
         "libs": [],
-        "x": 1800,
+        "x": 2600,
         "y": 180,
         "wires": [
             [
                 "f38dcdb7a260954a"
-            ]
-        ]
-    },
-    {
-        "id": "081be4dc01c9ac41",
-        "type": "link call",
-        "z": "9cbfefb5395ca356",
-        "name": "",
-        "links": [
-            "9320469a7ec1bcdc"
-        ],
-        "linkType": "static",
-        "timeout": "30",
-        "x": 800,
-        "y": 200,
-        "wires": [
-            [
-                "77d8486683dab46d"
             ]
         ]
     },
@@ -511,8 +393,9 @@
         "type": "function",
         "z": "9cbfefb5395ca356",
         "name": "Parse Response",
-        "func": "var input = msg.payload\nvar result = []\n\nif (input.data && input.data.length > 0) {\n    result = input.data\n} else if (input.fail && input.fail.length > 0) {\n    result = input.fail\n}\n\nmsg.payload = result\nreturn msg;",
+        "func": "var input = msg.payload\nvar result = []\n\nif (input.data && input.data.length > 0) {\n    result = input.data\n} else if (input.fail && input.fail.length > 0) {\n    result = input.fail\n} else if (Array.isArray(input) && 'data' in input[0]) {\n    input.forEach(a => {\n        var b = a.data\n        if (Array.isArray(b) && b.length === 1) {\n            var c = b[0]\n            var d = Object.keys(c)[0]\n            result.push(...c[d])\n        } else {\n            result.push(...a.data)\n        }\n    })\n}\n\n/*var keys = Object.keys(result[0])\nif (keys.length === 1) {\n    var key = keys[0]\n    var tempResult = []\n    result.forEach(a => {\n        tempResult.push(...a[key])\n    })\n    result = tempResult\n}*/\n\n\n\nmsg.payload = result\nreturn msg;",
         "outputs": 1,
+        "timeout": "",
         "noerr": 0,
         "initialize": "",
         "finalize": "",
@@ -550,7 +433,7 @@
         "name": "Get Held Message List",
         "links": [],
         "x": 220,
-        "y": 1140,
+        "y": 920,
         "wires": [
             [
                 "e60d5373dfb66379"
@@ -570,7 +453,7 @@
         "finalize": "",
         "libs": [],
         "x": 670,
-        "y": 1140,
+        "y": 920,
         "wires": [
             [
                 "d51422bdf94d9112"
@@ -588,7 +471,7 @@
         "linkType": "static",
         "timeout": "30",
         "x": 880,
-        "y": 1140,
+        "y": 920,
         "wires": [
             [
                 "e8a8285c11ca3d72"
@@ -603,7 +486,7 @@
         "mode": "return",
         "links": [],
         "x": 1285,
-        "y": 1140,
+        "y": 920,
         "wires": []
     },
     {
@@ -617,7 +500,7 @@
         "linkType": "static",
         "timeout": "30",
         "x": 1120,
-        "y": 1140,
+        "y": 920,
         "wires": [
             [
                 "04cfc5d214722a10"
@@ -680,7 +563,7 @@
         "linkType": "static",
         "timeout": "30",
         "x": 450,
-        "y": 1140,
+        "y": 920,
         "wires": [
             [
                 "ac5f64bedc2dee24"
@@ -699,7 +582,7 @@
         "finalize": "",
         "libs": [],
         "x": 380,
-        "y": 1100,
+        "y": 880,
         "wires": [
             [
                 "a1ddb632dd7ff19b"
@@ -713,7 +596,7 @@
         "name": "Get Held Types",
         "links": [],
         "x": 200,
-        "y": 1100,
+        "y": 880,
         "wires": [
             [
                 "85bdf271a5b63702"
@@ -732,7 +615,7 @@
         "linkType": "static",
         "timeout": "30",
         "x": 560,
-        "y": 1100,
+        "y": 880,
         "wires": [
             [
                 "91902da0901b0380"
@@ -750,7 +633,7 @@
         "linkType": "static",
         "timeout": "30",
         "x": 800,
-        "y": 1100,
+        "y": 880,
         "wires": [
             [
                 "2e540d860e5e7ed7"
@@ -765,7 +648,7 @@
         "mode": "return",
         "links": [],
         "x": 965,
-        "y": 1100,
+        "y": 880,
         "wires": []
     },
     {
@@ -788,7 +671,7 @@
         "checkall": "true",
         "repair": false,
         "outputs": 2,
-        "x": 1640,
+        "x": 2440,
         "y": 160,
         "wires": [
             [
@@ -804,13 +687,14 @@
         "type": "function",
         "z": "9cbfefb5395ca356",
         "name": "Make another API call",
-        "func": "if (!msg.allResults) msg.allResults = []\nif (msg.payload.data) msg.allResults.push(...msg.payload.data)\n\nvar output = {\n    meta: {\n        pagination: {\n            pageSize: msg.payload.meta.pageSize || flow.get(\"defaultPageSize\"),\n            pageToken: msg.payload.meta.pagination.next\n        }\n    },\n    data: msg.omsg.payload.data.data\n}\n\nmsg.headers = {}\nmsg.payload = output\nreturn msg;",
+        "func": "if (!msg.allResults) msg.allResults = []\nif (msg.payload.data) msg.allResults.push(msg.payload)\n\nvar output = {\n    meta: {\n        pagination: {\n            pageSize: msg.payload.meta.pageSize || flow.get(\"defaultPageSize\"),\n            pageToken: msg.payload.meta.pagination.next\n        }\n    },\n    data: msg.data.data || []\n}\n\nmsg.headers = {}\nmsg.payload = output\nreturn msg;",
         "outputs": 1,
+        "timeout": "",
         "noerr": 0,
         "initialize": "",
         "finalize": "",
         "libs": [],
-        "x": 1840,
+        "x": 2640,
         "y": 140,
         "wires": [
             [
@@ -825,7 +709,7 @@
         "name": "Message Queue",
         "info": "",
         "x": 140,
-        "y": 1040,
+        "y": 820,
         "wires": []
     },
     {
@@ -840,7 +724,7 @@
         "finalize": "",
         "libs": [],
         "x": 400,
-        "y": 1180,
+        "y": 960,
         "wires": [
             [
                 "5956de02a4e8a763"
@@ -854,7 +738,7 @@
         "name": "Release Messages",
         "links": [],
         "x": 210,
-        "y": 1180,
+        "y": 960,
         "wires": [
             [
                 "f41477b0d304dca0"
@@ -873,7 +757,7 @@
         "linkType": "static",
         "timeout": "30",
         "x": 580,
-        "y": 1180,
+        "y": 960,
         "wires": [
             [
                 "7f8dc432669d545e"
@@ -891,7 +775,7 @@
         "linkType": "static",
         "timeout": "30",
         "x": 820,
-        "y": 1180,
+        "y": 960,
         "wires": [
             [
                 "54c8874d23fbfe97"
@@ -906,7 +790,7 @@
         "mode": "return",
         "links": [],
         "x": 985,
-        "y": 1180,
+        "y": 960,
         "wires": []
     },
     {
@@ -934,8 +818,8 @@
         "checkall": "true",
         "repair": false,
         "outputs": 3,
-        "x": 1440,
-        "y": 180,
+        "x": 2240,
+        "y": 200,
         "wires": [
             [
                 "6562d0365f25f0c5"
@@ -965,8 +849,8 @@
         "drop": false,
         "allowrate": false,
         "outputs": 1,
-        "x": 1820,
-        "y": 220,
+        "x": 2680,
+        "y": 240,
         "wires": [
             [
                 "3946faf3323583f4"
@@ -978,14 +862,15 @@
         "type": "function",
         "z": "9cbfefb5395ca356",
         "name": "Rate Limited",
-        "func": "msg.delay = msg.headers[\"x-ratelimit-reset\"] * 1000\nreturn msg;",
+        "func": "msg.delay = msg.headers[\"x-ratelimit-reset\"] * 1000\nnode.warn(\"rate limiting applied\")\nreturn msg;",
         "outputs": 1,
+        "timeout": "",
         "noerr": 0,
         "initialize": "",
         "finalize": "",
         "libs": [],
-        "x": 1650,
-        "y": 220,
+        "x": 2510,
+        "y": 240,
         "wires": [
             [
                 "6700f73db5c2aa7a"
@@ -1021,8 +906,8 @@
         "from": "",
         "to": "",
         "reg": false,
-        "x": 1970,
-        "y": 220,
+        "x": 2810,
+        "y": 240,
         "wires": [
             [
                 "ce0ef901bbebb9cb"
@@ -1127,7 +1012,7 @@
         "name": "Search (Message Tracking)",
         "info": "",
         "x": 170,
-        "y": 1260,
+        "y": 1040,
         "wires": []
     },
     {
@@ -1142,7 +1027,7 @@
         "finalize": "",
         "libs": [],
         "x": 560,
-        "y": 1320,
+        "y": 1100,
         "wires": [
             [
                 "238d4c8b92ab65d5"
@@ -1156,7 +1041,7 @@
         "name": "Search",
         "links": [],
         "x": 190,
-        "y": 1320,
+        "y": 1100,
         "wires": [
             [
                 "93a1d1789ee3636d"
@@ -1175,7 +1060,7 @@
         "linkType": "static",
         "timeout": "30",
         "x": 740,
-        "y": 1320,
+        "y": 1100,
         "wires": [
             [
                 "8acf6cbffd6787c9"
@@ -1193,7 +1078,7 @@
         "linkType": "static",
         "timeout": "30",
         "x": 980,
-        "y": 1320,
+        "y": 1100,
         "wires": [
             [
                 "26316bd2a7ae6adc"
@@ -1208,7 +1093,7 @@
         "mode": "return",
         "links": [],
         "x": 1345,
-        "y": 1320,
+        "y": 1100,
         "wires": []
     },
     {
@@ -1223,7 +1108,7 @@
         "finalize": "",
         "libs": [],
         "x": 1220,
-        "y": 1320,
+        "y": 1100,
         "wires": [
             [
                 "b07150418d1f2471"
@@ -1241,7 +1126,7 @@
         "linkType": "static",
         "timeout": "30",
         "x": 370,
-        "y": 1320,
+        "y": 1100,
         "wires": [
             [
                 "6b821c67370148a3"
@@ -1260,7 +1145,7 @@
         "finalize": "",
         "libs": [],
         "x": 420,
-        "y": 1360,
+        "y": 1140,
         "wires": [
             [
                 "6cad8fe4c748e440"
@@ -1274,7 +1159,7 @@
         "name": "Get Message Info",
         "links": [],
         "x": 230,
-        "y": 1360,
+        "y": 1140,
         "wires": [
             [
                 "f0d63948ccf5376b"
@@ -1293,7 +1178,7 @@
         "linkType": "static",
         "timeout": "30",
         "x": 600,
-        "y": 1360,
+        "y": 1140,
         "wires": [
             [
                 "af8e674de84bf625"
@@ -1311,7 +1196,7 @@
         "linkType": "static",
         "timeout": "30",
         "x": 840,
-        "y": 1360,
+        "y": 1140,
         "wires": [
             [
                 "504fcf940bf4d383"
@@ -1326,7 +1211,7 @@
         "mode": "return",
         "links": [],
         "x": 1005,
-        "y": 1360,
+        "y": 1140,
         "wires": []
     },
     {
@@ -1336,12 +1221,11 @@
         "name": "",
         "scope": null,
         "uncaught": true,
-        "x": 960,
-        "y": 60,
+        "x": 1160,
+        "y": 80,
         "wires": [
             [
-                "d622f4b38d617297",
-                "05d18fd861d9768d"
+                "d622f4b38d617297"
             ]
         ]
     },
@@ -1362,8 +1246,8 @@
         "checkall": "true",
         "repair": false,
         "outputs": 1,
-        "x": 1130,
-        "y": 60,
+        "x": 1330,
+        "y": 80,
         "wires": [
             [
                 "f298341966b62940"
@@ -1375,7 +1259,7 @@
         "type": "debug",
         "z": "9cbfefb5395ca356",
         "name": "",
-        "active": false,
+        "active": true,
         "tosidebar": true,
         "console": false,
         "tostatus": false,
@@ -1383,8 +1267,8 @@
         "targetType": "full",
         "statusVal": "",
         "statusType": "auto",
-        "x": 1270,
-        "y": 60,
+        "x": 1470,
+        "y": 80,
         "wires": []
     },
     {
@@ -1426,7 +1310,7 @@
         "name": "SIEM Log Stream",
         "links": [],
         "x": 240,
-        "y": 1580,
+        "y": 1360,
         "wires": [
             [
                 "70e689b58d7f491a"
@@ -1442,7 +1326,7 @@
         "mode": "return",
         "links": [],
         "x": 715,
-        "y": 1580,
+        "y": 1360,
         "wires": []
     },
     {
@@ -1450,14 +1334,14 @@
         "type": "function",
         "z": "9cbfefb5395ca356",
         "name": "Set URI",
-        "func": "msg.payload.uri = \"/v1/siem/events/cg\"\nreturn msg;",
+        "func": "msg.payload.uri = \"/v1/siem/events/cg\"\nmsg.payload.method = \"GET\"\nreturn msg;",
         "outputs": 1,
         "noerr": 0,
         "initialize": "",
         "finalize": "",
         "libs": [],
         "x": 410,
-        "y": 1580,
+        "y": 1360,
         "wires": [
             [
                 "4a07b29584b8f90f"
@@ -1475,7 +1359,7 @@
         "linkType": "static",
         "timeout": "30",
         "x": 580,
-        "y": 1580,
+        "y": 1360,
         "wires": [
             [
                 "e74b7818a6d3e2a5"
@@ -1489,7 +1373,7 @@
         "name": "Logs",
         "info": "",
         "x": 110,
-        "y": 1440,
+        "y": 1220,
         "wires": []
     },
     {
@@ -1499,7 +1383,7 @@
         "name": "SIEM Logs",
         "info": "",
         "x": 180,
-        "y": 1500,
+        "y": 1280,
         "wires": []
     },
     {
@@ -1516,69 +1400,6 @@
             ]
         ],
         "l": true
-    },
-    {
-        "id": "449fd81bd64f44e0",
-        "type": "link in",
-        "z": "9cbfefb5395ca356",
-        "name": "SIEM Log Batch",
-        "links": [],
-        "x": 240,
-        "y": 1620,
-        "wires": [
-            [
-                "3c0c8f3140fa828b"
-            ]
-        ],
-        "l": true
-    },
-    {
-        "id": "3c0c8f3140fa828b",
-        "type": "function",
-        "z": "9cbfefb5395ca356",
-        "name": "Set URI",
-        "func": "msg.payload.uri = \"/v1/siem/batch/events/cg\"\nreturn msg;",
-        "outputs": 1,
-        "noerr": 0,
-        "initialize": "",
-        "finalize": "",
-        "libs": [],
-        "x": 410,
-        "y": 1620,
-        "wires": [
-            [
-                "2d2e8036e76524a4"
-            ]
-        ]
-    },
-    {
-        "id": "2d2e8036e76524a4",
-        "type": "link call",
-        "z": "9cbfefb5395ca356",
-        "name": "",
-        "links": [
-            "13229fc558500bb1"
-        ],
-        "linkType": "static",
-        "timeout": "30",
-        "x": 580,
-        "y": 1620,
-        "wires": [
-            [
-                "85f0e77b281869dd"
-            ]
-        ]
-    },
-    {
-        "id": "85f0e77b281869dd",
-        "type": "link out",
-        "z": "9cbfefb5395ca356",
-        "name": "link out 25",
-        "mode": "return",
-        "links": [],
-        "x": 1365,
-        "y": 1620,
-        "wires": []
     },
     {
         "id": "ddf5ced95f237131",
@@ -1744,36 +1565,6 @@
         ]
     },
     {
-        "id": "05d18fd861d9768d",
-        "type": "function",
-        "z": "9cbfefb5395ca356",
-        "name": "Uncaught Return?",
-        "func": "if (msg.omsg && msg._linkSource) {\n    var msg2 = msg.omsg\n    msg2.payload = msg.error\n    return msg2\n}",
-        "outputs": 1,
-        "noerr": 0,
-        "initialize": "",
-        "finalize": "",
-        "libs": [],
-        "x": 1170,
-        "y": 100,
-        "wires": [
-            [
-                "5442667f64cd1341"
-            ]
-        ]
-    },
-    {
-        "id": "5442667f64cd1341",
-        "type": "link out",
-        "z": "9cbfefb5395ca356",
-        "name": "link out 28",
-        "mode": "return",
-        "links": [],
-        "x": 1315,
-        "y": 100,
-        "wires": []
-    },
-    {
         "id": "bd304a55d41a3d9b",
         "type": "split",
         "z": "9cbfefb5395ca356",
@@ -1873,6 +1664,869 @@
                 "069d0ebf1eb16141"
             ]
         ]
+    },
+    {
+        "id": "5ecf42f8ef6f2d81",
+        "type": "switch",
+        "z": "9cbfefb5395ca356",
+        "name": "Method?",
+        "property": "method",
+        "propertyType": "msg",
+        "rules": [
+            {
+                "t": "eq",
+                "v": "GET",
+                "vt": "str"
+            },
+            {
+                "t": "else"
+            }
+        ],
+        "checkall": "true",
+        "repair": false,
+        "outputs": 2,
+        "x": 1520,
+        "y": 200,
+        "wires": [
+            [
+                "7a7c08d05a1da470"
+            ],
+            [
+                "1e9b825b6ea9931f"
+            ]
+        ]
+    },
+    {
+        "id": "77cc9025a5d053ac",
+        "type": "http request",
+        "z": "9cbfefb5395ca356",
+        "name": "",
+        "method": "GET",
+        "ret": "txt",
+        "paytoqs": "query",
+        "url": "",
+        "tls": "25f8f84a.4e7f98",
+        "persist": false,
+        "proxy": "",
+        "insecureHTTPParser": false,
+        "authType": "",
+        "senderr": false,
+        "headers": [],
+        "x": 1910,
+        "y": 160,
+        "wires": [
+            [
+                "f78335b4b47e2d70",
+                "74f1c249007bcb56"
+            ]
+        ]
+    },
+    {
+        "id": "7a7c08d05a1da470",
+        "type": "change",
+        "z": "9cbfefb5395ca356",
+        "name": "",
+        "rules": [
+            {
+                "t": "delete",
+                "p": "method",
+                "pt": "msg"
+            }
+        ],
+        "action": "",
+        "property": "",
+        "from": "",
+        "to": "",
+        "reg": false,
+        "x": 1710,
+        "y": 160,
+        "wires": [
+            [
+                "77cc9025a5d053ac"
+            ]
+        ]
+    },
+    {
+        "id": "f78335b4b47e2d70",
+        "type": "json",
+        "z": "9cbfefb5395ca356",
+        "name": "",
+        "property": "payload",
+        "action": "obj",
+        "pretty": false,
+        "x": 2070,
+        "y": 200,
+        "wires": [
+            [
+                "791c869ee163e4c5"
+            ]
+        ]
+    },
+    {
+        "id": "5c604802209b64f2",
+        "type": "catch",
+        "z": "9cbfefb5395ca356",
+        "name": "",
+        "scope": [
+            "f78335b4b47e2d70"
+        ],
+        "uncaught": false,
+        "x": 2070,
+        "y": 160,
+        "wires": [
+            [
+                "791c869ee163e4c5"
+            ]
+        ]
+    },
+    {
+        "id": "0bae4d5eb047a07c",
+        "type": "link in",
+        "z": "9cbfefb5395ca356",
+        "name": "SIEM Log Batch Files",
+        "links": [],
+        "x": 260,
+        "y": 1400,
+        "wires": [
+            [
+                "6f6ed4810c9b3b13"
+            ]
+        ],
+        "l": true
+    },
+    {
+        "id": "6f6ed4810c9b3b13",
+        "type": "function",
+        "z": "9cbfefb5395ca356",
+        "name": "Set URI",
+        "func": "var msg2 = {\n    omsg: msg,\n    payload: msg.payload\n}\n\nmsg2.payload.uri = \"/v1/siem/batch/events/cg\"\nmsg2.payload.method = \"GET\"\nmsg2.type = msg.payload.type\nmsg2.request = msg.payload\nreturn msg2;",
+        "outputs": 1,
+        "timeout": "",
+        "noerr": 0,
+        "initialize": "",
+        "finalize": "",
+        "libs": [],
+        "x": 460,
+        "y": 1400,
+        "wires": [
+            [
+                "3de96f29e30a1e53"
+            ]
+        ]
+    },
+    {
+        "id": "3de96f29e30a1e53",
+        "type": "link call",
+        "z": "9cbfefb5395ca356",
+        "name": "",
+        "links": [
+            "13229fc558500bb1"
+        ],
+        "linkType": "static",
+        "timeout": "30",
+        "x": 640,
+        "y": 1400,
+        "wires": [
+            [
+                "3f671b13714c538d"
+            ]
+        ]
+    },
+    {
+        "id": "3f671b13714c538d",
+        "type": "function",
+        "z": "9cbfefb5395ca356",
+        "name": "Format output",
+        "func": "var msg2 = msg.omsg\n\nmsg2.payload = {\n    request: msg.request.data,\n    files: msg.payload.value\n}\nmsg2.payload.request.nextPage = msg.payload[\"@nextPage\"]\n\nreturn msg2;",
+        "outputs": 1,
+        "timeout": "",
+        "noerr": 0,
+        "initialize": "",
+        "finalize": "",
+        "libs": [],
+        "x": 840,
+        "y": 1400,
+        "wires": [
+            [
+                "ce49e970017ec2f3"
+            ]
+        ]
+    },
+    {
+        "id": "ce49e970017ec2f3",
+        "type": "link out",
+        "z": "9cbfefb5395ca356",
+        "name": "link out 30",
+        "mode": "return",
+        "links": [],
+        "x": 975,
+        "y": 1400,
+        "wires": []
+    },
+    {
+        "id": "fa8ef017f5042d2f",
+        "type": "debug",
+        "z": "9cbfefb5395ca356",
+        "name": "API Debug Response",
+        "active": true,
+        "tosidebar": true,
+        "console": false,
+        "tostatus": false,
+        "complete": "true",
+        "targetType": "full",
+        "statusVal": "",
+        "statusType": "auto",
+        "x": 2280,
+        "y": 240,
+        "wires": []
+    },
+    {
+        "id": "0aca8774c0b6214f",
+        "type": "inject",
+        "z": "9cbfefb5395ca356",
+        "name": "Enable API Call Debug",
+        "props": [
+            {
+                "p": "payload"
+            },
+            {
+                "p": "topic",
+                "vt": "str"
+            }
+        ],
+        "repeat": "",
+        "crontab": "",
+        "once": false,
+        "onceDelay": 0.1,
+        "topic": "Enable API Call Debug",
+        "payload": "true",
+        "payloadType": "bool",
+        "x": 620,
+        "y": 60,
+        "wires": [
+            [
+                "2240cb7c4c6c8e8b"
+            ]
+        ]
+    },
+    {
+        "id": "74f1c249007bcb56",
+        "type": "switch",
+        "z": "9cbfefb5395ca356",
+        "name": "Debug?",
+        "property": "apiDebug",
+        "propertyType": "flow",
+        "rules": [
+            {
+                "t": "true"
+            }
+        ],
+        "checkall": "true",
+        "repair": false,
+        "outputs": 1,
+        "x": 2080,
+        "y": 240,
+        "wires": [
+            [
+                "fa8ef017f5042d2f"
+            ]
+        ]
+    },
+    {
+        "id": "2240cb7c4c6c8e8b",
+        "type": "change",
+        "z": "9cbfefb5395ca356",
+        "name": "",
+        "rules": [
+            {
+                "t": "set",
+                "p": "apiDebug",
+                "pt": "flow",
+                "to": "payload",
+                "tot": "msg"
+            }
+        ],
+        "action": "",
+        "property": "",
+        "from": "",
+        "to": "",
+        "reg": false,
+        "x": 850,
+        "y": 80,
+        "wires": [
+            []
+        ]
+    },
+    {
+        "id": "4e570455a283a21f",
+        "type": "inject",
+        "z": "9cbfefb5395ca356",
+        "name": "Disable API Call Debug",
+        "props": [
+            {
+                "p": "payload"
+            },
+            {
+                "p": "topic",
+                "vt": "str"
+            }
+        ],
+        "repeat": "",
+        "crontab": "",
+        "once": false,
+        "onceDelay": 0.1,
+        "topic": "Disable API Call Debug",
+        "payload": "false",
+        "payloadType": "bool",
+        "x": 620,
+        "y": 100,
+        "wires": [
+            [
+                "2240cb7c4c6c8e8b"
+            ]
+        ]
+    },
+    {
+        "id": "c990f862dcd15c5a",
+        "type": "debug",
+        "z": "9cbfefb5395ca356",
+        "name": "API Debug Request",
+        "active": true,
+        "tosidebar": true,
+        "console": false,
+        "tostatus": false,
+        "complete": "true",
+        "targetType": "full",
+        "statusVal": "",
+        "statusType": "auto",
+        "x": 1710,
+        "y": 240,
+        "wires": []
+    },
+    {
+        "id": "eb8cccecc907a12c",
+        "type": "switch",
+        "z": "9cbfefb5395ca356",
+        "name": "Debug?",
+        "property": "apiDebug",
+        "propertyType": "flow",
+        "rules": [
+            {
+                "t": "true"
+            }
+        ],
+        "checkall": "true",
+        "repair": false,
+        "outputs": 1,
+        "x": 1520,
+        "y": 240,
+        "wires": [
+            [
+                "c990f862dcd15c5a"
+            ]
+        ]
+    },
+    {
+        "id": "3af91ab526c73201",
+        "type": "function",
+        "z": "9cbfefb5395ca356",
+        "name": "Set URI",
+        "func": "msg.payload.uri = \"/api/ttp/attachment/get-logs\"\nreturn msg;",
+        "outputs": 1,
+        "timeout": "",
+        "noerr": 0,
+        "initialize": "",
+        "finalize": "",
+        "libs": [],
+        "x": 560,
+        "y": 1540,
+        "wires": [
+            [
+                "771a4509d6136586"
+            ]
+        ]
+    },
+    {
+        "id": "771a4509d6136586",
+        "type": "link call",
+        "z": "9cbfefb5395ca356",
+        "name": "",
+        "links": [
+            "13229fc558500bb1"
+        ],
+        "linkType": "static",
+        "timeout": "30",
+        "x": 740,
+        "y": 1540,
+        "wires": [
+            [
+                "f451edcdbeb23bce"
+            ]
+        ]
+    },
+    {
+        "id": "a521328c496bc1b5",
+        "type": "link in",
+        "z": "9cbfefb5395ca356",
+        "name": "Get TTP Attachment Protection Logs",
+        "links": [],
+        "x": 310,
+        "y": 1540,
+        "wires": [
+            [
+                "3af91ab526c73201"
+            ]
+        ],
+        "l": true
+    },
+    {
+        "id": "244eae5f6c698a6f",
+        "type": "link out",
+        "z": "9cbfefb5395ca356",
+        "name": "link out 31",
+        "mode": "return",
+        "links": [],
+        "x": 1145,
+        "y": 1540,
+        "wires": []
+    },
+    {
+        "id": "56eacf3d99c7fadf",
+        "type": "comment",
+        "z": "9cbfefb5395ca356",
+        "name": "Targeted Threat Proteection",
+        "info": "",
+        "x": 240,
+        "y": 1480,
+        "wires": []
+    },
+    {
+        "id": "f451edcdbeb23bce",
+        "type": "link call",
+        "z": "9cbfefb5395ca356",
+        "name": "",
+        "links": [
+            "ddbdfaaca9da7739"
+        ],
+        "linkType": "static",
+        "timeout": "30",
+        "x": 980,
+        "y": 1540,
+        "wires": [
+            [
+                "244eae5f6c698a6f"
+            ]
+        ]
+    },
+    {
+        "id": "1089e1e8f2735b96",
+        "type": "link in",
+        "z": "9cbfefb5395ca356",
+        "name": "Get TTP Impersonation Protection Logs",
+        "links": [],
+        "x": 310,
+        "y": 1580,
+        "wires": [
+            [
+                "a2ac7cc374045fa3"
+            ]
+        ],
+        "l": true
+    },
+    {
+        "id": "a2ac7cc374045fa3",
+        "type": "function",
+        "z": "9cbfefb5395ca356",
+        "name": "Set URI",
+        "func": "msg.payload.uri = \"/api/ttp/impersonation/get-logs\"\nreturn msg;",
+        "outputs": 1,
+        "timeout": "",
+        "noerr": 0,
+        "initialize": "",
+        "finalize": "",
+        "libs": [],
+        "x": 560,
+        "y": 1580,
+        "wires": [
+            [
+                "6d4aece53641ef2a"
+            ]
+        ]
+    },
+    {
+        "id": "6d4aece53641ef2a",
+        "type": "link call",
+        "z": "9cbfefb5395ca356",
+        "name": "",
+        "links": [
+            "13229fc558500bb1"
+        ],
+        "linkType": "static",
+        "timeout": "30",
+        "x": 740,
+        "y": 1580,
+        "wires": [
+            [
+                "a15a472e729476b3"
+            ]
+        ]
+    },
+    {
+        "id": "a15a472e729476b3",
+        "type": "link call",
+        "z": "9cbfefb5395ca356",
+        "name": "",
+        "links": [
+            "ddbdfaaca9da7739"
+        ],
+        "linkType": "static",
+        "timeout": "30",
+        "x": 980,
+        "y": 1580,
+        "wires": [
+            [
+                "41f27c0025c32e41"
+            ]
+        ]
+    },
+    {
+        "id": "41f27c0025c32e41",
+        "type": "link out",
+        "z": "9cbfefb5395ca356",
+        "name": "link out 32",
+        "mode": "return",
+        "links": [],
+        "x": 1145,
+        "y": 1580,
+        "wires": []
+    },
+    {
+        "id": "637446a4a2c92ed0",
+        "type": "link in",
+        "z": "9cbfefb5395ca356",
+        "name": "Get TTP URL Protection Logs",
+        "links": [],
+        "x": 280,
+        "y": 1620,
+        "wires": [
+            [
+                "43d3bd05ea73d86c"
+            ]
+        ],
+        "l": true
+    },
+    {
+        "id": "43d3bd05ea73d86c",
+        "type": "function",
+        "z": "9cbfefb5395ca356",
+        "name": "Set URI",
+        "func": "msg.payload.uri = \"/api/ttp/url/get-logs\"\nreturn msg;",
+        "outputs": 1,
+        "timeout": "",
+        "noerr": 0,
+        "initialize": "",
+        "finalize": "",
+        "libs": [],
+        "x": 500,
+        "y": 1620,
+        "wires": [
+            [
+                "ecb83efd17cf6d27"
+            ]
+        ]
+    },
+    {
+        "id": "ecb83efd17cf6d27",
+        "type": "link call",
+        "z": "9cbfefb5395ca356",
+        "name": "",
+        "links": [
+            "13229fc558500bb1"
+        ],
+        "linkType": "static",
+        "timeout": "30",
+        "x": 680,
+        "y": 1620,
+        "wires": [
+            [
+                "b7eadf574a7443fa"
+            ]
+        ]
+    },
+    {
+        "id": "b7eadf574a7443fa",
+        "type": "link call",
+        "z": "9cbfefb5395ca356",
+        "name": "",
+        "links": [
+            "ddbdfaaca9da7739"
+        ],
+        "linkType": "static",
+        "timeout": "30",
+        "x": 920,
+        "y": 1620,
+        "wires": [
+            [
+                "b065e618e5df4b7f"
+            ]
+        ]
+    },
+    {
+        "id": "b065e618e5df4b7f",
+        "type": "link out",
+        "z": "9cbfefb5395ca356",
+        "name": "link out 33",
+        "mode": "return",
+        "links": [],
+        "x": 1085,
+        "y": 1620,
+        "wires": []
+    },
+    {
+        "id": "9aaaed7675649868",
+        "type": "link in",
+        "z": "9cbfefb5395ca356",
+        "name": "Get DLP Logs",
+        "links": [],
+        "x": 230,
+        "y": 1760,
+        "wires": [
+            [
+                "c75d4670ccc0b6f4"
+            ]
+        ],
+        "l": true
+    },
+    {
+        "id": "c75d4670ccc0b6f4",
+        "type": "function",
+        "z": "9cbfefb5395ca356",
+        "name": "Set URI",
+        "func": "msg.payload.uri = \"/api/dlp/get-logs\"\nreturn msg;",
+        "outputs": 1,
+        "timeout": "",
+        "noerr": 0,
+        "initialize": "",
+        "finalize": "",
+        "libs": [],
+        "x": 400,
+        "y": 1760,
+        "wires": [
+            [
+                "b2f75adb1efa703a"
+            ]
+        ]
+    },
+    {
+        "id": "b2f75adb1efa703a",
+        "type": "link call",
+        "z": "9cbfefb5395ca356",
+        "name": "",
+        "links": [
+            "13229fc558500bb1"
+        ],
+        "linkType": "static",
+        "timeout": "30",
+        "x": 580,
+        "y": 1760,
+        "wires": [
+            [
+                "7cb212325865406c"
+            ]
+        ]
+    },
+    {
+        "id": "7cb212325865406c",
+        "type": "link call",
+        "z": "9cbfefb5395ca356",
+        "name": "",
+        "links": [
+            "ddbdfaaca9da7739"
+        ],
+        "linkType": "static",
+        "timeout": "30",
+        "x": 820,
+        "y": 1760,
+        "wires": [
+            [
+                "43718b07c9dfe015"
+            ]
+        ]
+    },
+    {
+        "id": "43718b07c9dfe015",
+        "type": "link out",
+        "z": "9cbfefb5395ca356",
+        "name": "link out 34",
+        "mode": "return",
+        "links": [],
+        "x": 985,
+        "y": 1760,
+        "wires": []
+    },
+    {
+        "id": "c38e1b6ff86a39ed",
+        "type": "link in",
+        "z": "9cbfefb5395ca356",
+        "name": "Get Rejection Logs",
+        "links": [],
+        "x": 250,
+        "y": 1800,
+        "wires": [
+            [
+                "40125595f8e205d9"
+            ]
+        ],
+        "l": true
+    },
+    {
+        "id": "40125595f8e205d9",
+        "type": "function",
+        "z": "9cbfefb5395ca356",
+        "name": "Set URI",
+        "func": "msg.payload.uri = \"/api/gateway/get-rejections\"\nreturn msg;",
+        "outputs": 1,
+        "timeout": "",
+        "noerr": 0,
+        "initialize": "",
+        "finalize": "",
+        "libs": [],
+        "x": 440,
+        "y": 1800,
+        "wires": [
+            [
+                "30aeb3dfb157939c"
+            ]
+        ]
+    },
+    {
+        "id": "30aeb3dfb157939c",
+        "type": "link call",
+        "z": "9cbfefb5395ca356",
+        "name": "",
+        "links": [
+            "13229fc558500bb1"
+        ],
+        "linkType": "static",
+        "timeout": "30",
+        "x": 620,
+        "y": 1800,
+        "wires": [
+            [
+                "063bfc99a06cd82c"
+            ]
+        ]
+    },
+    {
+        "id": "063bfc99a06cd82c",
+        "type": "link call",
+        "z": "9cbfefb5395ca356",
+        "name": "",
+        "links": [
+            "ddbdfaaca9da7739"
+        ],
+        "linkType": "static",
+        "timeout": "30",
+        "x": 860,
+        "y": 1800,
+        "wires": [
+            [
+                "cf1ed901052b654a"
+            ]
+        ]
+    },
+    {
+        "id": "cf1ed901052b654a",
+        "type": "link out",
+        "z": "9cbfefb5395ca356",
+        "name": "link out 35",
+        "mode": "return",
+        "links": [],
+        "x": 1025,
+        "y": 1800,
+        "wires": []
+    },
+    {
+        "id": "d3bdf0caa5c52d26",
+        "type": "link in",
+        "z": "9cbfefb5395ca356",
+        "name": "Get Message Release Logs",
+        "links": [],
+        "x": 280,
+        "y": 1840,
+        "wires": [
+            [
+                "93baf5ac1c6e2cf4"
+            ]
+        ],
+        "l": true
+    },
+    {
+        "id": "93baf5ac1c6e2cf4",
+        "type": "function",
+        "z": "9cbfefb5395ca356",
+        "name": "Set URI",
+        "func": "msg.payload.uri = \"/api/gateway/get-held-release-logs\"\nreturn msg;",
+        "outputs": 1,
+        "timeout": "",
+        "noerr": 0,
+        "initialize": "",
+        "finalize": "",
+        "libs": [],
+        "x": 500,
+        "y": 1840,
+        "wires": [
+            [
+                "fc8129f60d5838c0"
+            ]
+        ]
+    },
+    {
+        "id": "fc8129f60d5838c0",
+        "type": "link call",
+        "z": "9cbfefb5395ca356",
+        "name": "",
+        "links": [
+            "13229fc558500bb1"
+        ],
+        "linkType": "static",
+        "timeout": "30",
+        "x": 680,
+        "y": 1840,
+        "wires": [
+            [
+                "f9deee3d56e1fbd6"
+            ]
+        ]
+    },
+    {
+        "id": "f9deee3d56e1fbd6",
+        "type": "link call",
+        "z": "9cbfefb5395ca356",
+        "name": "",
+        "links": [
+            "ddbdfaaca9da7739"
+        ],
+        "linkType": "static",
+        "timeout": "30",
+        "x": 920,
+        "y": 1840,
+        "wires": [
+            [
+                "f10127cfe4a3c833"
+            ]
+        ]
+    },
+    {
+        "id": "f10127cfe4a3c833",
+        "type": "link out",
+        "z": "9cbfefb5395ca356",
+        "name": "link out 36",
+        "mode": "return",
+        "links": [],
+        "x": 1085,
+        "y": 1840,
+        "wires": []
     },
     {
         "id": "25f8f84a.4e7f98",
