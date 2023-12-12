@@ -30,7 +30,7 @@
         "name": "link out 2",
         "mode": "return",
         "links": [],
-        "x": 2705,
+        "x": 2725,
         "y": 180,
         "wires": []
     },
@@ -70,7 +70,7 @@
         "type": "function",
         "z": "9cbfefb5395ca356",
         "name": "Prep",
-        "func": "var msg2 = {\n    omsg: msg,\n    topic: msg.topic,\n    authentication: msg.payload.authentication,\n    headers: msg.payload.headers || {},\n    url: msg.payload.authentication.baseUrl + msg.payload.uri,\n    data: msg.payload.data || {},\n    method: msg.payload.method || \"POST\"\n}\n\nmsg2.payload = msg2.data\n\nvar token = msg2.authentication.tokenId || msg._msgid\nif (! /^tokens./.test(token) ) token = \"tokens.\" + token\nmsg2.authentication.tokenId = token\n\nif (flow.get(msg2.authentication.tokenId)) msg2.tokenExists = true\n\nif (! msg2.headers.accept) msg2.headers.accept = \"application/json\"\n\n//msg2.pageBackup = msg2\n//msg2.payloadBackup = msg2.payload\n\nreturn msg2;",
+        "func": "var msg2 = {\n    omsg: msg,\n    topic: msg.topic,\n    authentication: msg.payload.authentication,\n    headers: msg.payload.headers || {},\n    url: msg.payload.authentication.baseUrl + msg.payload.uri,\n    data: msg.payload.data || {},\n    meta: msg.payload.meta || {},\n    method: msg.payload.method || \"POST\"\n}\n\nmsg2.payload = msg2.data\n\nvar token = msg2.authentication.tokenId || msg._msgid\nif (! /^tokens./.test(token) ) token = \"tokens.\" + token\nmsg2.authentication.tokenId = token\n\nif (flow.get(msg2.authentication.tokenId)) msg2.tokenExists = true\n\nif (! msg2.headers.accept) msg2.headers.accept = \"application/json\"\n\n\n\nreturn msg2;",
         "outputs": 1,
         "timeout": "",
         "noerr": 0,
@@ -228,7 +228,7 @@
         "type": "function",
         "z": "9cbfefb5395ca356",
         "name": "Add Authorization",
-        "func": "var token = flow.get(msg.authentication.tokenId)\nmsg.headers.authorization = token.token_type + \" \" + token.access_token\n\nmsg.payloadBackup = msg.payload\nmsg.headersBackup = msg.headers\n\nreturn msg;",
+        "func": "var token = flow.get(msg.authentication.tokenId)\nmsg.headers.authorization = token.token_type + \" \" + token.access_token\n\nreturn msg;",
         "outputs": 1,
         "timeout": "",
         "noerr": 0,
@@ -260,7 +260,7 @@
         "authType": "",
         "senderr": false,
         "headers": [],
-        "x": 1790,
+        "x": 1870,
         "y": 200,
         "wires": [
             [
@@ -281,7 +281,7 @@
         "initialize": "",
         "finalize": "",
         "libs": [],
-        "x": 2600,
+        "x": 2620,
         "y": 180,
         "wires": [
             [
@@ -514,6 +514,7 @@
         "name": "Standard field normalization",
         "func": "function toIsoString(date) {\n    date = new Date(date)\n    var tzo = -date.getTimezoneOffset(),\n        dif = tzo >= 0 ? '+' : '-',\n        pad = function (num) {\n            return (num < 10 ? '0' : '') + num;\n        };\n\n    return date.getFullYear() +\n        '-' + pad(date.getMonth() + 1) +\n        '-' + pad(date.getDate()) +\n        'T' + pad(date.getHours()) +\n        ':' + pad(date.getMinutes()) +\n        ':' + pad(date.getSeconds()) +\n        dif + pad(Math.floor(Math.abs(tzo) / 60)) +\n        pad(Math.abs(tzo) % 60);\n}\n\n// -------------------\n\nvar request = msg.payload.data || {}\n\n//Start Date\nif (request.start) {\n    request.start = toIsoString(request.start)\n}\n\n// End Date\nif (request.end) {\n    request.end = toIsoString(request.end)\n}\n\n// Search\nif (request.search) {\n    var searchKey = Object.keys(request.search)[0] \n    request.searchBy = {\n        fieldName: searchKey,\n        value: request.search[searchKey]\n    }\n    delete request.search\n}\n\n// Filters\nif (request.filters) {\n    var filters = []\n    var filterKeys = Object.keys(request.search)\n    filterKeys.forEach(key => {\n        filters.push({\n            fieldName: key,\n            value: request.filters[key]\n        })\n    })\n    request.filterBy = filters\n    delete request.filters\n}\n\nmsg.payload.data = request\nreturn msg;",
         "outputs": 1,
+        "timeout": "",
         "noerr": 0,
         "initialize": "",
         "finalize": "",
@@ -671,7 +672,7 @@
         "checkall": "true",
         "repair": false,
         "outputs": 2,
-        "x": 2440,
+        "x": 2460,
         "y": 160,
         "wires": [
             [
@@ -694,7 +695,7 @@
         "initialize": "",
         "finalize": "",
         "libs": [],
-        "x": 2640,
+        "x": 2660,
         "y": 140,
         "wires": [
             [
@@ -818,7 +819,7 @@
         "checkall": "true",
         "repair": false,
         "outputs": 3,
-        "x": 2240,
+        "x": 2260,
         "y": 200,
         "wires": [
             [
@@ -849,7 +850,7 @@
         "drop": false,
         "allowrate": false,
         "outputs": 1,
-        "x": 2680,
+        "x": 2700,
         "y": 240,
         "wires": [
             [
@@ -869,7 +870,7 @@
         "initialize": "",
         "finalize": "",
         "libs": [],
-        "x": 2510,
+        "x": 2530,
         "y": 240,
         "wires": [
             [
@@ -906,7 +907,7 @@
         "from": "",
         "to": "",
         "reg": false,
-        "x": 2810,
+        "x": 2830,
         "y": 240,
         "wires": [
             [
@@ -1692,7 +1693,7 @@
                 "7a7c08d05a1da470"
             ],
             [
-                "1e9b825b6ea9931f"
+                "f9892a610975e64e"
             ]
         ]
     },
@@ -1754,7 +1755,7 @@
         "property": "payload",
         "action": "obj",
         "pretty": false,
-        "x": 2070,
+        "x": 2090,
         "y": 200,
         "wires": [
             [
@@ -1771,7 +1772,7 @@
             "f78335b4b47e2d70"
         ],
         "uncaught": false,
-        "x": 2070,
+        "x": 2090,
         "y": 160,
         "wires": [
             [
@@ -1876,7 +1877,7 @@
         "targetType": "full",
         "statusVal": "",
         "statusType": "auto",
-        "x": 2280,
+        "x": 2300,
         "y": 240,
         "wires": []
     },
@@ -1924,7 +1925,7 @@
         "checkall": "true",
         "repair": false,
         "outputs": 1,
-        "x": 2080,
+        "x": 2100,
         "y": 240,
         "wires": [
             [
@@ -2374,7 +2375,7 @@
         "y": 1800,
         "wires": [
             [
-                "40125595f8e205d9"
+                "897e01a1d1c72143"
             ]
         ],
         "l": true
@@ -2391,7 +2392,7 @@
         "initialize": "",
         "finalize": "",
         "libs": [],
-        "x": 440,
+        "x": 660,
         "y": 1800,
         "wires": [
             [
@@ -2409,7 +2410,7 @@
         ],
         "linkType": "static",
         "timeout": "30",
-        "x": 620,
+        "x": 840,
         "y": 1800,
         "wires": [
             [
@@ -2427,7 +2428,7 @@
         ],
         "linkType": "static",
         "timeout": "30",
-        "x": 860,
+        "x": 1080,
         "y": 1800,
         "wires": [
             [
@@ -2442,7 +2443,7 @@
         "name": "link out 35",
         "mode": "return",
         "links": [],
-        "x": 1025,
+        "x": 1245,
         "y": 1800,
         "wires": []
     },
@@ -2527,6 +2528,44 @@
         "x": 1085,
         "y": 1840,
         "wires": []
+    },
+    {
+        "id": "897e01a1d1c72143",
+        "type": "link call",
+        "z": "9cbfefb5395ca356",
+        "name": "",
+        "links": [
+            "811b3be6b9a3131b"
+        ],
+        "linkType": "static",
+        "timeout": "30",
+        "x": 470,
+        "y": 1800,
+        "wires": [
+            [
+                "40125595f8e205d9"
+            ]
+        ]
+    },
+    {
+        "id": "f9892a610975e64e",
+        "type": "function",
+        "z": "9cbfefb5395ca356",
+        "name": "Format Body",
+        "func": "var output = {\n    meta: msg.meta,\n    data: msg.data\n}\n\nif (!Array.isArray(output.data)) {\n    output.data = [output.data]\n}\n\nmsg.payload = output\nreturn msg;",
+        "outputs": 1,
+        "timeout": 0,
+        "noerr": 0,
+        "initialize": "",
+        "finalize": "",
+        "libs": [],
+        "x": 1690,
+        "y": 200,
+        "wires": [
+            [
+                "1e9b825b6ea9931f"
+            ]
+        ]
     },
     {
         "id": "25f8f84a.4e7f98",
