@@ -30,8 +30,8 @@
         "name": "link out 2",
         "mode": "return",
         "links": [],
-        "x": 2725,
-        "y": 180,
+        "x": 2885,
+        "y": 200,
         "wires": []
     },
     {
@@ -70,7 +70,7 @@
         "type": "function",
         "z": "9cbfefb5395ca356",
         "name": "Prep",
-        "func": "var msg2 = {\n    omsg: msg,\n    topic: msg.topic,\n    authentication: msg.payload.authentication,\n    headers: msg.payload.headers || {},\n    url: msg.payload.authentication.baseUrl + msg.payload.uri,\n    data: msg.payload.data || {},\n    meta: msg.payload.meta || {},\n    method: msg.payload.method || \"POST\"\n}\n\nmsg2.payload = msg2.data\n\nvar token = msg2.authentication.tokenId || msg._msgid\nif (! /^tokens./.test(token) ) token = \"tokens.\" + token\nmsg2.authentication.tokenId = token\n\nif (flow.get(msg2.authentication.tokenId)) msg2.tokenExists = true\n\nif (! msg2.headers.accept) msg2.headers.accept = \"application/json\"\n\n\n\nreturn msg2;",
+        "func": "var msg2 = {\n    omsg: msg,\n    topic: msg.topic,\n    authentication: msg.payload.authentication,\n    headers: msg.payload.headers || {},\n    url: msg.payload.authentication.baseUrl + msg.payload.uri,\n    data: msg.payload.data || {},\n    meta: msg.payload.meta || {},\n    method: msg.payload.method || \"POST\"\n}\n\nvar token = msg2.authentication.tokenId || msg._msgid\nif (! /^tokens./.test(token) ) token = \"tokens.\" + token\nmsg2.authentication.tokenId = token\n\nif (flow.get(msg2.authentication.tokenId)) msg2.tokenExists = true\n\nif (! msg2.headers.accept) msg2.headers.accept = \"application/json\"\n\n\n\nreturn msg2;",
         "outputs": 1,
         "timeout": "",
         "noerr": 0,
@@ -239,8 +239,7 @@
         "y": 200,
         "wires": [
             [
-                "5ecf42f8ef6f2d81",
-                "eb8cccecc907a12c"
+                "5ecf42f8ef6f2d81"
             ]
         ]
     },
@@ -264,8 +263,7 @@
         "y": 200,
         "wires": [
             [
-                "f78335b4b47e2d70",
-                "74f1c249007bcb56"
+                "f78335b4b47e2d70"
             ]
         ]
     },
@@ -274,15 +272,15 @@
         "type": "function",
         "z": "9cbfefb5395ca356",
         "name": "Clean Up",
-        "func": "var msg2 = msg.omsg\n\nif (msg.allResults && msg.payload.meta.pagination.pageSize !== msg.payload.meta.pagination.totalCount) {\n    msg.allResults.push(msg.payload)\n    msg2.payload = msg.allResults\n} else {\n    msg2.payload = msg.payload\n}\nreturn msg2;",
+        "func": "var msg2 = msg.omsg\nmsg2.payload = msg.allResults\nreturn msg2;",
         "outputs": 1,
         "timeout": "",
         "noerr": 0,
         "initialize": "",
         "finalize": "",
         "libs": [],
-        "x": 2620,
-        "y": 180,
+        "x": 2780,
+        "y": 200,
         "wires": [
             [
                 "f38dcdb7a260954a"
@@ -393,7 +391,7 @@
         "type": "function",
         "z": "9cbfefb5395ca356",
         "name": "Parse Response",
-        "func": "var input = msg.payload\nvar result = []\n\nif (input.data && input.data.length > 0) {\n    result = input.data\n} else if (input.fail && input.fail.length > 0) {\n    result = input.fail\n} else if (Array.isArray(input) && 'data' in input[0]) {\n    input.forEach(a => {\n        var b = a.data\n        if (Array.isArray(b) && b.length === 1) {\n            var c = b[0]\n            var d = Object.keys(c)[0]\n            result.push(...c[d])\n        } else {\n            result.push(...a.data)\n        }\n    })\n}\n\n/*var keys = Object.keys(result[0])\nif (keys.length === 1) {\n    var key = keys[0]\n    var tempResult = []\n    result.forEach(a => {\n        tempResult.push(...a[key])\n    })\n    result = tempResult\n}*/\n\n\n\nmsg.payload = result\nreturn msg;",
+        "func": "var input = msg.payload\nvar result = []\n\nif (input[0].fail && input[0].fail.length > 0) {\n    result = {\n        error: input[0].fail[0]\n    }\n} \nelse if (msg.parseField) {\n    input.forEach (a => {\n        result.push(...a.data[0][msg.parseField])\n    })\n    delete msg.parseField\n}\nelse if (input.length >= 1) {\n    input.forEach(a => {\n        if (a.data.length === 1 && Object.keys(a.data[0]).length === 1) {\n            var key = Object.keys(a.data[0])[0]\n            result.push(...(a.data[0][key]))\n        }\n        else {\n            result.push(...a.data)\n        }\n    })\n}\nelse {\n    result = input\n}\n\nif (result.length === 1) {\n    result = result[0]\n}\n\nmsg.payload = result\nreturn msg;",
         "outputs": 1,
         "timeout": "",
         "noerr": 0,
@@ -672,8 +670,8 @@
         "checkall": "true",
         "repair": false,
         "outputs": 2,
-        "x": 2460,
-        "y": 160,
+        "x": 2620,
+        "y": 180,
         "wires": [
             [
                 "dc9706565fbd4644"
@@ -688,15 +686,15 @@
         "type": "function",
         "z": "9cbfefb5395ca356",
         "name": "Make another API call",
-        "func": "if (!msg.allResults) msg.allResults = []\nif (msg.payload.data) msg.allResults.push(msg.payload)\n\nvar output = {\n    meta: {\n        pagination: {\n            pageSize: msg.payload.meta.pageSize || flow.get(\"defaultPageSize\"),\n            pageToken: msg.payload.meta.pagination.next\n        }\n    },\n    data: msg.data.data || []\n}\n\nmsg.headers = {}\nmsg.payload = output\nreturn msg;",
+        "func": "msg.allResults.push(msg.payload)\n\nvar output = {\n    meta: {\n        pagination: {\n            pageSize: msg.payload.meta.pageSize || flow.get(\"defaultPageSize\"),\n            pageToken: msg.payload.meta.pagination.next\n        }\n    },\n    data: msg.data || []\n}\n\nmsg.meta.pagination = {\n    pageSize: msg.payload.meta.pageSize || flow.get(\"defaultPageSize\"),\n    pageToken: msg.payload.meta.pagination.next\n}\n\nmsg.headers = {}\n//msg.payload = output\nreturn msg;",
         "outputs": 1,
         "timeout": "",
         "noerr": 0,
         "initialize": "",
         "finalize": "",
         "libs": [],
-        "x": 2660,
-        "y": 140,
+        "x": 2820,
+        "y": 160,
         "wires": [
             [
                 "ce0ef901bbebb9cb"
@@ -823,13 +821,13 @@
         "y": 200,
         "wires": [
             [
-                "6562d0365f25f0c5"
+                "daa95f347d9a1d4a"
             ],
             [
                 "a0d1ee314482be70"
             ],
             [
-                "6562d0365f25f0c5"
+                "8d4958d03cd05e52"
             ]
         ]
     },
@@ -851,7 +849,7 @@
         "allowrate": false,
         "outputs": 1,
         "x": 2700,
-        "y": 240,
+        "y": 260,
         "wires": [
             [
                 "3946faf3323583f4"
@@ -863,7 +861,7 @@
         "type": "function",
         "z": "9cbfefb5395ca356",
         "name": "Rate Limited",
-        "func": "msg.delay = msg.headers[\"x-ratelimit-reset\"] * 1000\nnode.warn(\"rate limiting applied\")\nreturn msg;",
+        "func": "msg.delay = (msg.headers[\"x-ratelimit-reset\"] || 5) * 1000\nnode.warn(\"rate limiting applied\")\nreturn msg;",
         "outputs": 1,
         "timeout": "",
         "noerr": 0,
@@ -871,7 +869,7 @@
         "finalize": "",
         "libs": [],
         "x": 2530,
-        "y": 240,
+        "y": 260,
         "wires": [
             [
                 "6700f73db5c2aa7a"
@@ -893,13 +891,6 @@
                 "t": "delete",
                 "p": "statusCode",
                 "pt": "msg"
-            },
-            {
-                "t": "move",
-                "p": "payloadBackup",
-                "pt": "msg",
-                "to": "payload",
-                "tot": "msg"
             }
         ],
         "action": "",
@@ -907,8 +898,8 @@
         "from": "",
         "to": "",
         "reg": false,
-        "x": 2830,
-        "y": 240,
+        "x": 2850,
+        "y": 260,
         "wires": [
             [
                 "ce0ef901bbebb9cb"
@@ -1675,9 +1666,10 @@
         "propertyType": "msg",
         "rules": [
             {
-                "t": "eq",
-                "v": "GET",
-                "vt": "str"
+                "t": "regex",
+                "v": "get",
+                "vt": "str",
+                "case": true
             },
             {
                 "t": "else"
@@ -1687,7 +1679,7 @@
         "repair": false,
         "outputs": 2,
         "x": 1520,
-        "y": 200,
+        "y": 160,
         "wires": [
             [
                 "7a7c08d05a1da470"
@@ -1717,8 +1709,7 @@
         "y": 160,
         "wires": [
             [
-                "f78335b4b47e2d70",
-                "74f1c249007bcb56"
+                "f78335b4b47e2d70"
             ]
         ]
     },
@@ -1732,6 +1723,13 @@
                 "t": "delete",
                 "p": "method",
                 "pt": "msg"
+            },
+            {
+                "t": "set",
+                "p": "payload",
+                "pt": "msg",
+                "to": "data",
+                "tot": "msg"
             }
         ],
         "action": "",
@@ -1739,11 +1737,12 @@
         "from": "",
         "to": "",
         "reg": false,
-        "x": 1710,
+        "x": 1700,
         "y": 160,
         "wires": [
             [
-                "77cc9025a5d053ac"
+                "77cc9025a5d053ac",
+                "eb8cccecc907a12c"
             ]
         ]
     },
@@ -1759,7 +1758,8 @@
         "y": 200,
         "wires": [
             [
-                "791c869ee163e4c5"
+                "791c869ee163e4c5",
+                "74f1c249007bcb56"
             ]
         ]
     },
@@ -1776,7 +1776,8 @@
         "y": 160,
         "wires": [
             [
-                "791c869ee163e4c5"
+                "791c869ee163e4c5",
+                "74f1c249007bcb56"
             ]
         ]
     },
@@ -1800,7 +1801,7 @@
         "type": "function",
         "z": "9cbfefb5395ca356",
         "name": "Set URI",
-        "func": "var msg2 = {\n    omsg: msg,\n    payload: msg.payload\n}\n\nmsg2.payload.uri = \"/v1/siem/batch/events/cg\"\nmsg2.payload.method = \"GET\"\nmsg2.type = msg.payload.type\nmsg2.request = msg.payload\nreturn msg2;",
+        "func": "var msg2 = {\n    omsg: msg,\n    payload: msg.payload\n}\n\nmsg2.payload.uri = \"/v1/siem/batch/events/cg\"\nmsg2.payload.method = \"GET\"\nmsg2.type = msg.payload.data.type\nmsg2.request = msg.payload\nreturn msg2;",
         "outputs": 1,
         "timeout": "",
         "noerr": 0,
@@ -1838,7 +1839,7 @@
         "type": "function",
         "z": "9cbfefb5395ca356",
         "name": "Format output",
-        "func": "var msg2 = msg.omsg\n\nmsg2.payload = {\n    request: msg.request.data,\n    files: msg.payload.value\n}\nmsg2.payload.request.nextPage = msg.payload[\"@nextPage\"]\n\nreturn msg2;",
+        "func": "var msg2 = msg.omsg\n\nmsg2.payload = {\n    request: msg.request.data,\n    files: msg.payload[0].value\n}\nmsg2.payload.request.nextPage = msg.payload[0][\"@nextPage\"]\n\nreturn msg2;",
         "outputs": 1,
         "timeout": "",
         "noerr": 0,
@@ -2032,7 +2033,7 @@
         "type": "function",
         "z": "9cbfefb5395ca356",
         "name": "Set URI",
-        "func": "msg.payload.uri = \"/api/ttp/attachment/get-logs\"\nreturn msg;",
+        "func": "msg.payload.uri = \"/api/ttp/attachment/get-logs\"\nmsg.parseField = \"attachmentLogs\"\nreturn msg;",
         "outputs": 1,
         "timeout": "",
         "noerr": 0,
@@ -2139,7 +2140,7 @@
         "type": "function",
         "z": "9cbfefb5395ca356",
         "name": "Set URI",
-        "func": "msg.payload.uri = \"/api/ttp/impersonation/get-logs\"\nreturn msg;",
+        "func": "msg.payload.uri = \"/api/ttp/impersonation/get-logs\"\nmsg.parseField = \"impersonationLogs\"\nreturn msg;",
         "outputs": 1,
         "timeout": "",
         "noerr": 0,
@@ -2552,7 +2553,7 @@
         "type": "function",
         "z": "9cbfefb5395ca356",
         "name": "Format Body",
-        "func": "var output = {\n    meta: msg.meta,\n    data: msg.data\n}\n\nif (!Array.isArray(output.data)) {\n    output.data = [output.data]\n}\n\nmsg.payload = output\nreturn msg;",
+        "func": "msg.payload = {\n    meta: msg.meta,\n    data: msg.data\n}\n\nif (!Array.isArray(msg.payload.data)) msg.payload.data = [msg.payload.data]\n\nif (Object.keys(msg.payload).length > 0) {\n    if (Object.keys(msg.payload.meta).length === 0) delete msg.payload.meta\n    if (Object.keys(msg.payload.data).length === 0) delete msg.payload.data\n    if (msg.payload.data.length === 1 && Object.keys(msg.payload.data[0]).length === 0) delete msg.payload.data\n}\n\nreturn msg;",
         "outputs": 1,
         "timeout": 0,
         "noerr": 0,
@@ -2563,7 +2564,48 @@
         "y": 200,
         "wires": [
             [
+                "eb8cccecc907a12c",
                 "1e9b825b6ea9931f"
+            ]
+        ]
+    },
+    {
+        "id": "daa95f347d9a1d4a",
+        "type": "function",
+        "z": "9cbfefb5395ca356",
+        "name": "Save Results",
+        "func": "if (!msg.allResults) msg.allResults = []\nmsg.allResults.push(msg.payload)\nreturn msg;",
+        "outputs": 1,
+        "timeout": 0,
+        "noerr": 0,
+        "initialize": "",
+        "finalize": "",
+        "libs": [],
+        "x": 2450,
+        "y": 180,
+        "wires": [
+            [
+                "6562d0365f25f0c5"
+            ]
+        ]
+    },
+    {
+        "id": "8d4958d03cd05e52",
+        "type": "function",
+        "z": "9cbfefb5395ca356",
+        "name": "Error Response",
+        "func": "msg.payload = {\n    fail: [{\n        responseCode: msg.statusCode\n    }]\n}\nreturn msg;",
+        "outputs": 1,
+        "timeout": 0,
+        "noerr": 0,
+        "initialize": "",
+        "finalize": "",
+        "libs": [],
+        "x": 2520,
+        "y": 220,
+        "wires": [
+            [
+                "daa95f347d9a1d4a"
             ]
         ]
     },
