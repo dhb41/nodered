@@ -1,5 +1,5 @@
 Mimecast Flow
-These are a set of linked flows that can be used by other flows within Node Red to make API calls to Mimecast's API 2.0 endpoints.
+These are a set of linked flows that can be used by other flows within Node Red to make API calls to Mimecast's API 2.0 endpoints. These make use of the public API documentation found here: https://developer.services.mimecast.com/apis
 
 ![image001](https://github.com/dhb41/nodered/assets/141678879/6694629b-cd7e-4803-9548-080fd377b4eb)
 
