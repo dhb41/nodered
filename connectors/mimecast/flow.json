@@ -1,0 +1,2625 @@
+[
+    {
+        "id": "9cbfefb5395ca356",
+        "type": "tab",
+        "label": "Mimecast API v2",
+        "disabled": false,
+        "info": "",
+        "env": []
+    },
+    {
+        "id": "13229fc558500bb1",
+        "type": "link in",
+        "z": "9cbfefb5395ca356",
+        "name": "Make API Call",
+        "links": [],
+        "x": 190,
+        "y": 200,
+        "wires": [
+            [
+                "58be07d07f221de4"
+            ]
+        ],
+        "l": true,
+        "info": "Valid input:\n\nmsg.payload = {\n    uri: \"\",\n    data: \"\",\n    method: \"\",\n    authentication: {\n        tokenId: \"\" // ID used to retrieve an existing token,\n        clientId: \"\",\n        clientSecret: \"\"\n    }\n}"
+    },
+    {
+        "id": "f38dcdb7a260954a",
+        "type": "link out",
+        "z": "9cbfefb5395ca356",
+        "name": "link out 2",
+        "mode": "return",
+        "links": [],
+        "x": 2885,
+        "y": 200,
+        "wires": []
+    },
+    {
+        "id": "b8d362535eec22b7",
+        "type": "http request",
+        "z": "9cbfefb5395ca356",
+        "name": "",
+        "method": "POST",
+        "ret": "obj",
+        "paytoqs": "ignore",
+        "url": "",
+        "tls": "25f8f84a.4e7f98",
+        "persist": false,
+        "proxy": "",
+        "insecureHTTPParser": false,
+        "authType": "",
+        "senderr": false,
+        "headers": [
+            {
+                "keyType": "other",
+                "keyValue": "Content-Type",
+                "valueType": "other",
+                "valueValue": "application/x-www-form-urlencoded"
+            }
+        ],
+        "x": 930,
+        "y": 240,
+        "wires": [
+            [
+                "0d3cab8a78049634"
+            ]
+        ]
+    },
+    {
+        "id": "58be07d07f221de4",
+        "type": "function",
+        "z": "9cbfefb5395ca356",
+        "name": "Prep",
+        "func": "var msg2 = {\n    omsg: msg,\n    topic: msg.topic,\n    authentication: msg.payload.authentication,\n    headers: msg.payload.headers || {},\n    url: msg.payload.authentication.baseUrl + msg.payload.uri,\n    data: msg.payload.data || {},\n    meta: msg.payload.meta || {},\n    method: msg.payload.method || \"POST\"\n}\n\nvar token = msg2.authentication.tokenId || msg._msgid\nif (! /^tokens./.test(token) ) token = \"tokens.\" + token\nmsg2.authentication.tokenId = token\n\nif (flow.get(msg2.authentication.tokenId)) msg2.tokenExists = true\n\nif (! msg2.headers.accept) msg2.headers.accept = \"application/json\"\n\n\n\nreturn msg2;",
+        "outputs": 1,
+        "timeout": "",
+        "noerr": 0,
+        "initialize": "",
+        "finalize": "",
+        "libs": [],
+        "x": 350,
+        "y": 200,
+        "wires": [
+            [
+                "ce0ef901bbebb9cb"
+            ]
+        ]
+    },
+    {
+        "id": "ce0ef901bbebb9cb",
+        "type": "switch",
+        "z": "9cbfefb5395ca356",
+        "name": "Valid Token ID?",
+        "property": "tokenExists",
+        "propertyType": "msg",
+        "rules": [
+            {
+                "t": "true"
+            },
+            {
+                "t": "else"
+            }
+        ],
+        "checkall": "true",
+        "repair": false,
+        "outputs": 2,
+        "x": 520,
+        "y": 200,
+        "wires": [
+            [
+                "9022f066a7dc573f"
+            ],
+            [
+                "a5b21ac49094bb38"
+            ]
+        ]
+    },
+    {
+        "id": "9022f066a7dc573f",
+        "type": "function",
+        "z": "9cbfefb5395ca356",
+        "name": "Get Token Expiration",
+        "func": "if (new Date() < new Date(flow.get(msg.authentication.tokenId).expires_timestamp)) {\n    return [msg, null];\n} else {\n    return [null, msg]\n}",
+        "outputs": 2,
+        "timeout": "",
+        "noerr": 0,
+        "initialize": "",
+        "finalize": "",
+        "libs": [],
+        "x": 760,
+        "y": 160,
+        "wires": [
+            [
+                "77d8486683dab46d"
+            ],
+            [
+                "a5b21ac49094bb38"
+            ]
+        ]
+    },
+    {
+        "id": "3a385b1531567710",
+        "type": "inject",
+        "z": "9cbfefb5395ca356",
+        "name": "",
+        "props": [
+            {
+                "p": "payload"
+            },
+            {
+                "p": "topic",
+                "vt": "str"
+            }
+        ],
+        "repeat": "",
+        "crontab": "",
+        "once": true,
+        "onceDelay": 0.1,
+        "topic": "",
+        "payload": "",
+        "payloadType": "date",
+        "x": 170,
+        "y": 80,
+        "wires": [
+            [
+                "82d0371d4b752077"
+            ]
+        ]
+    },
+    {
+        "id": "82d0371d4b752077",
+        "type": "function",
+        "z": "9cbfefb5395ca356",
+        "name": "Set Flow Vars",
+        "func": "flow.set(\"tokens\", {})\nflow.set(\"defaultPageSize\", 100)\nreturn msg;",
+        "outputs": 1,
+        "noerr": 0,
+        "initialize": "",
+        "finalize": "",
+        "libs": [],
+        "x": 360,
+        "y": 80,
+        "wires": [
+            []
+        ]
+    },
+    {
+        "id": "a5b21ac49094bb38",
+        "type": "function",
+        "z": "9cbfefb5395ca356",
+        "name": "Get New Token",
+        "func": "var fields = [\n    \"client_id=\" + msg.authentication.clientId,\n    \"client_secret=\" + msg.authentication.clientSecret,\n    \"grant_type=client_credentials\"\n]\n\nvar msg2 = {\n    omsg: msg,\n    url: msg.authentication.baseUrl + \"/oauth/token\",\n    payload: fields.join(\"&\")\n}\nreturn msg2;",
+        "outputs": 1,
+        "timeout": "",
+        "noerr": 0,
+        "initialize": "",
+        "finalize": "",
+        "libs": [],
+        "x": 740,
+        "y": 240,
+        "wires": [
+            [
+                "b8d362535eec22b7"
+            ]
+        ]
+    },
+    {
+        "id": "0d3cab8a78049634",
+        "type": "function",
+        "z": "9cbfefb5395ca356",
+        "name": "Save Token",
+        "func": "var token = msg.payload\n\nnode.warn(\"new token: \" + token)\nif (! (token.fail && token.fail.length > 0)) {\n    var timestamp = new Date()\n    timestamp.setSeconds(timestamp.getSeconds() + token.expires_in)\n\n    token.expires_timestamp = timestamp\n    flow.set(msg.omsg.authentication.tokenId, token)\n}\n\nreturn msg.omsg;",
+        "outputs": 1,
+        "timeout": "",
+        "noerr": 0,
+        "initialize": "",
+        "finalize": "",
+        "libs": [],
+        "x": 1110,
+        "y": 240,
+        "wires": [
+            [
+                "77d8486683dab46d"
+            ]
+        ]
+    },
+    {
+        "id": "77d8486683dab46d",
+        "type": "function",
+        "z": "9cbfefb5395ca356",
+        "name": "Add Authorization",
+        "func": "var token = flow.get(msg.authentication.tokenId)\nmsg.headers.authorization = token.token_type + \" \" + token.access_token\n\nreturn msg;",
+        "outputs": 1,
+        "timeout": "",
+        "noerr": 0,
+        "initialize": "",
+        "finalize": "",
+        "libs": [],
+        "x": 1330,
+        "y": 200,
+        "wires": [
+            [
+                "5ecf42f8ef6f2d81"
+            ]
+        ]
+    },
+    {
+        "id": "1e9b825b6ea9931f",
+        "type": "http request",
+        "z": "9cbfefb5395ca356",
+        "name": "",
+        "method": "use",
+        "ret": "txt",
+        "paytoqs": "ignore",
+        "url": "",
+        "tls": "25f8f84a.4e7f98",
+        "persist": false,
+        "proxy": "",
+        "insecureHTTPParser": false,
+        "authType": "",
+        "senderr": false,
+        "headers": [],
+        "x": 1870,
+        "y": 200,
+        "wires": [
+            [
+                "f78335b4b47e2d70"
+            ]
+        ]
+    },
+    {
+        "id": "c299c01d4d25b28d",
+        "type": "function",
+        "z": "9cbfefb5395ca356",
+        "name": "Clean Up",
+        "func": "var msg2 = msg.omsg\nmsg2.payload = msg.allResults\nreturn msg2;",
+        "outputs": 1,
+        "timeout": "",
+        "noerr": 0,
+        "initialize": "",
+        "finalize": "",
+        "libs": [],
+        "x": 2780,
+        "y": 200,
+        "wires": [
+            [
+                "f38dcdb7a260954a"
+            ]
+        ]
+    },
+    {
+        "id": "23cc0a04039777aa",
+        "type": "function",
+        "z": "9cbfefb5395ca356",
+        "name": "Set URI",
+        "func": "msg.payload.uri = \"/api/account/get-account\"\nreturn msg;",
+        "outputs": 1,
+        "noerr": 0,
+        "initialize": "",
+        "finalize": "",
+        "libs": [],
+        "x": 380,
+        "y": 500,
+        "wires": [
+            [
+                "02daa630bcf1fadf"
+            ]
+        ]
+    },
+    {
+        "id": "02daa630bcf1fadf",
+        "type": "link call",
+        "z": "9cbfefb5395ca356",
+        "name": "",
+        "links": [
+            "13229fc558500bb1"
+        ],
+        "linkType": "static",
+        "timeout": "30",
+        "x": 560,
+        "y": 500,
+        "wires": [
+            [
+                "1ecec6c27c2f78cc"
+            ]
+        ]
+    },
+    {
+        "id": "8e4092b6d03f3846",
+        "type": "link in",
+        "z": "9cbfefb5395ca356",
+        "name": "Get Account",
+        "links": [],
+        "x": 210,
+        "y": 500,
+        "wires": [
+            [
+                "23cc0a04039777aa"
+            ]
+        ],
+        "l": true
+    },
+    {
+        "id": "ef3fe019602fb51d",
+        "type": "link out",
+        "z": "9cbfefb5395ca356",
+        "name": "link out 5",
+        "mode": "return",
+        "links": [],
+        "x": 965,
+        "y": 500,
+        "wires": []
+    },
+    {
+        "id": "16347d8f2dfc5ebd",
+        "type": "comment",
+        "z": "9cbfefb5395ca356",
+        "name": "Account Info",
+        "info": "",
+        "x": 130,
+        "y": 420,
+        "wires": []
+    },
+    {
+        "id": "ddbdfaaca9da7739",
+        "type": "link in",
+        "z": "9cbfefb5395ca356",
+        "name": "Parse Standard Response",
+        "links": [],
+        "x": 230,
+        "y": 320,
+        "wires": [
+            [
+                "4556a081dcc7264a"
+            ]
+        ],
+        "l": true
+    },
+    {
+        "id": "a95ef5c166e182f8",
+        "type": "link out",
+        "z": "9cbfefb5395ca356",
+        "name": "link out 6",
+        "mode": "return",
+        "links": [],
+        "x": 585,
+        "y": 320,
+        "wires": []
+    },
+    {
+        "id": "4556a081dcc7264a",
+        "type": "function",
+        "z": "9cbfefb5395ca356",
+        "name": "Parse Response",
+        "func": "var input = msg.payload\nvar result = []\n\nif (input[0].fail && input[0].fail.length > 0) {\n    result = {\n        error: input[0].fail[0]\n    }\n} \nelse if (msg.parseField) {\n    input.forEach (a => {\n        result.push(...a.data[0][msg.parseField])\n    })\n    delete msg.parseField\n}\nelse if (input.length >= 1) {\n    input.forEach(a => {\n        if (a.data.length === 1 && Object.keys(a.data[0]).length === 1) {\n            var key = Object.keys(a.data[0])[0]\n            result.push(...(a.data[0][key]))\n        }\n        else {\n            result.push(...a.data)\n        }\n    })\n}\nelse {\n    result = input\n}\n\nif (result.length === 1) {\n    result = result[0]\n}\n\nmsg.payload = result\nreturn msg;",
+        "outputs": 1,
+        "timeout": "",
+        "noerr": 0,
+        "initialize": "",
+        "finalize": "",
+        "libs": [],
+        "x": 460,
+        "y": 320,
+        "wires": [
+            [
+                "a95ef5c166e182f8"
+            ]
+        ]
+    },
+    {
+        "id": "1ecec6c27c2f78cc",
+        "type": "link call",
+        "z": "9cbfefb5395ca356",
+        "name": "",
+        "links": [
+            "ddbdfaaca9da7739"
+        ],
+        "linkType": "static",
+        "timeout": "30",
+        "x": 800,
+        "y": 500,
+        "wires": [
+            [
+                "ef3fe019602fb51d"
+            ]
+        ]
+    },
+    {
+        "id": "5a4a143345b3967a",
+        "type": "link in",
+        "z": "9cbfefb5395ca356",
+        "name": "Get Held Message List",
+        "links": [],
+        "x": 220,
+        "y": 920,
+        "wires": [
+            [
+                "e60d5373dfb66379"
+            ]
+        ],
+        "l": true
+    },
+    {
+        "id": "ac5f64bedc2dee24",
+        "type": "function",
+        "z": "9cbfefb5395ca356",
+        "name": "Get Held Messages",
+        "func": "var output = {\n    account: msg.payload.account,\n    uri: \"/api/gateway/get-hold-message-list\",\n    data: {\n        meta: {\n            pagination: {\n                pageSize: flow.get(\"defaultPageSize\")\n            }\n        },\n        data: msg.payload.data\n    }\n}\n\nif (!output.data.data.admin) output.data.data.admin = true\nif (!Array.isArray(output.data.data)) output.data.data = [output.data.data]\n\nmsg.payload = output\nreturn msg;",
+        "outputs": 1,
+        "noerr": 0,
+        "initialize": "",
+        "finalize": "",
+        "libs": [],
+        "x": 670,
+        "y": 920,
+        "wires": [
+            [
+                "d51422bdf94d9112"
+            ]
+        ]
+    },
+    {
+        "id": "d51422bdf94d9112",
+        "type": "link call",
+        "z": "9cbfefb5395ca356",
+        "name": "",
+        "links": [
+            "13229fc558500bb1"
+        ],
+        "linkType": "static",
+        "timeout": "30",
+        "x": 880,
+        "y": 920,
+        "wires": [
+            [
+                "e8a8285c11ca3d72"
+            ]
+        ]
+    },
+    {
+        "id": "04cfc5d214722a10",
+        "type": "link out",
+        "z": "9cbfefb5395ca356",
+        "name": "link out 7",
+        "mode": "return",
+        "links": [],
+        "x": 1285,
+        "y": 920,
+        "wires": []
+    },
+    {
+        "id": "e8a8285c11ca3d72",
+        "type": "link call",
+        "z": "9cbfefb5395ca356",
+        "name": "",
+        "links": [
+            "ddbdfaaca9da7739"
+        ],
+        "linkType": "static",
+        "timeout": "30",
+        "x": 1120,
+        "y": 920,
+        "wires": [
+            [
+                "04cfc5d214722a10"
+            ]
+        ]
+    },
+    {
+        "id": "d419f18fb46539a7",
+        "type": "function",
+        "z": "9cbfefb5395ca356",
+        "name": "Standard field normalization",
+        "func": "function toIsoString(date) {\n    date = new Date(date)\n    var tzo = -date.getTimezoneOffset(),\n        dif = tzo >= 0 ? '+' : '-',\n        pad = function (num) {\n            return (num < 10 ? '0' : '') + num;\n        };\n\n    return date.getFullYear() +\n        '-' + pad(date.getMonth() + 1) +\n        '-' + pad(date.getDate()) +\n        'T' + pad(date.getHours()) +\n        ':' + pad(date.getMinutes()) +\n        ':' + pad(date.getSeconds()) +\n        dif + pad(Math.floor(Math.abs(tzo) / 60)) +\n        pad(Math.abs(tzo) % 60);\n}\n\n// -------------------\n\nvar request = msg.payload.data || {}\n\n//Start Date\nif (request.start) {\n    request.start = toIsoString(request.start)\n}\n\n// End Date\nif (request.end) {\n    request.end = toIsoString(request.end)\n}\n\n// Search\nif (request.search) {\n    var searchKey = Object.keys(request.search)[0] \n    request.searchBy = {\n        fieldName: searchKey,\n        value: request.search[searchKey]\n    }\n    delete request.search\n}\n\n// Filters\nif (request.filters) {\n    var filters = []\n    var filterKeys = Object.keys(request.search)\n    filterKeys.forEach(key => {\n        filters.push({\n            fieldName: key,\n            value: request.filters[key]\n        })\n    })\n    request.filterBy = filters\n    delete request.filters\n}\n\nmsg.payload.data = request\nreturn msg;",
+        "outputs": 1,
+        "timeout": "",
+        "noerr": 0,
+        "initialize": "",
+        "finalize": "",
+        "libs": [],
+        "x": 1010,
+        "y": 320,
+        "wires": [
+            [
+                "9fd1b64b7f58c881"
+            ]
+        ]
+    },
+    {
+        "id": "811b3be6b9a3131b",
+        "type": "link in",
+        "z": "9cbfefb5395ca356",
+        "name": "Normalize Request",
+        "links": [],
+        "x": 770,
+        "y": 320,
+        "wires": [
+            [
+                "d419f18fb46539a7"
+            ]
+        ],
+        "l": true
+    },
+    {
+        "id": "9fd1b64b7f58c881",
+        "type": "link out",
+        "z": "9cbfefb5395ca356",
+        "name": "link out 8",
+        "mode": "return",
+        "links": [],
+        "x": 1175,
+        "y": 320,
+        "wires": []
+    },
+    {
+        "id": "e60d5373dfb66379",
+        "type": "link call",
+        "z": "9cbfefb5395ca356",
+        "name": "",
+        "links": [
+            "811b3be6b9a3131b"
+        ],
+        "linkType": "static",
+        "timeout": "30",
+        "x": 450,
+        "y": 920,
+        "wires": [
+            [
+                "ac5f64bedc2dee24"
+            ]
+        ]
+    },
+    {
+        "id": "85bdf271a5b63702",
+        "type": "function",
+        "z": "9cbfefb5395ca356",
+        "name": "Set URI",
+        "func": "msg.payload.uri = \"/api/gateway/get-hold-summary-list\"\nreturn msg;",
+        "outputs": 1,
+        "noerr": 0,
+        "initialize": "",
+        "finalize": "",
+        "libs": [],
+        "x": 380,
+        "y": 880,
+        "wires": [
+            [
+                "a1ddb632dd7ff19b"
+            ]
+        ]
+    },
+    {
+        "id": "1d99c5028d651c3b",
+        "type": "link in",
+        "z": "9cbfefb5395ca356",
+        "name": "Get Held Types",
+        "links": [],
+        "x": 200,
+        "y": 880,
+        "wires": [
+            [
+                "85bdf271a5b63702"
+            ]
+        ],
+        "l": true
+    },
+    {
+        "id": "a1ddb632dd7ff19b",
+        "type": "link call",
+        "z": "9cbfefb5395ca356",
+        "name": "",
+        "links": [
+            "13229fc558500bb1"
+        ],
+        "linkType": "static",
+        "timeout": "30",
+        "x": 560,
+        "y": 880,
+        "wires": [
+            [
+                "91902da0901b0380"
+            ]
+        ]
+    },
+    {
+        "id": "91902da0901b0380",
+        "type": "link call",
+        "z": "9cbfefb5395ca356",
+        "name": "",
+        "links": [
+            "ddbdfaaca9da7739"
+        ],
+        "linkType": "static",
+        "timeout": "30",
+        "x": 800,
+        "y": 880,
+        "wires": [
+            [
+                "2e540d860e5e7ed7"
+            ]
+        ]
+    },
+    {
+        "id": "2e540d860e5e7ed7",
+        "type": "link out",
+        "z": "9cbfefb5395ca356",
+        "name": "link out 9",
+        "mode": "return",
+        "links": [],
+        "x": 965,
+        "y": 880,
+        "wires": []
+    },
+    {
+        "id": "6562d0365f25f0c5",
+        "type": "switch",
+        "z": "9cbfefb5395ca356",
+        "name": "Paged?",
+        "property": "payload.meta.pagination",
+        "propertyType": "msg",
+        "rules": [
+            {
+                "t": "hask",
+                "v": "next",
+                "vt": "str"
+            },
+            {
+                "t": "else"
+            }
+        ],
+        "checkall": "true",
+        "repair": false,
+        "outputs": 2,
+        "x": 2620,
+        "y": 180,
+        "wires": [
+            [
+                "dc9706565fbd4644"
+            ],
+            [
+                "c299c01d4d25b28d"
+            ]
+        ]
+    },
+    {
+        "id": "dc9706565fbd4644",
+        "type": "function",
+        "z": "9cbfefb5395ca356",
+        "name": "Make another API call",
+        "func": "msg.allResults.push(msg.payload)\n\nvar output = {\n    meta: {\n        pagination: {\n            pageSize: msg.payload.meta.pageSize || flow.get(\"defaultPageSize\"),\n            pageToken: msg.payload.meta.pagination.next\n        }\n    },\n    data: msg.data || []\n}\n\nmsg.meta.pagination = {\n    pageSize: msg.payload.meta.pageSize || flow.get(\"defaultPageSize\"),\n    pageToken: msg.payload.meta.pagination.next\n}\n\nmsg.headers = {}\n//msg.payload = output\nreturn msg;",
+        "outputs": 1,
+        "timeout": "",
+        "noerr": 0,
+        "initialize": "",
+        "finalize": "",
+        "libs": [],
+        "x": 2820,
+        "y": 160,
+        "wires": [
+            [
+                "ce0ef901bbebb9cb"
+            ]
+        ]
+    },
+    {
+        "id": "22f1acf37d5d3944",
+        "type": "comment",
+        "z": "9cbfefb5395ca356",
+        "name": "Message Queue",
+        "info": "",
+        "x": 140,
+        "y": 820,
+        "wires": []
+    },
+    {
+        "id": "f41477b0d304dca0",
+        "type": "function",
+        "z": "9cbfefb5395ca356",
+        "name": "Release",
+        "func": "msg.payload.uri = \"/api/gateway/hold-release\"\n\nvar ids = msg.payload.data.ids || [msg.payload.data.id]\nvar data = []\nids.forEach(id => {\n    data.push({\n        id: id\n    })\n})\n\nmsg.payload.data = {\n    data: data\n}\ndelete msg.payload.id\ndelete msg.payload.ids\n\nreturn msg;",
+        "outputs": 1,
+        "noerr": 0,
+        "initialize": "",
+        "finalize": "",
+        "libs": [],
+        "x": 400,
+        "y": 960,
+        "wires": [
+            [
+                "5956de02a4e8a763"
+            ]
+        ]
+    },
+    {
+        "id": "208644fb26a1500c",
+        "type": "link in",
+        "z": "9cbfefb5395ca356",
+        "name": "Release Messages",
+        "links": [],
+        "x": 210,
+        "y": 960,
+        "wires": [
+            [
+                "f41477b0d304dca0"
+            ]
+        ],
+        "l": true
+    },
+    {
+        "id": "5956de02a4e8a763",
+        "type": "link call",
+        "z": "9cbfefb5395ca356",
+        "name": "",
+        "links": [
+            "13229fc558500bb1"
+        ],
+        "linkType": "static",
+        "timeout": "30",
+        "x": 580,
+        "y": 960,
+        "wires": [
+            [
+                "7f8dc432669d545e"
+            ]
+        ]
+    },
+    {
+        "id": "7f8dc432669d545e",
+        "type": "link call",
+        "z": "9cbfefb5395ca356",
+        "name": "",
+        "links": [
+            "ddbdfaaca9da7739"
+        ],
+        "linkType": "static",
+        "timeout": "30",
+        "x": 820,
+        "y": 960,
+        "wires": [
+            [
+                "54c8874d23fbfe97"
+            ]
+        ]
+    },
+    {
+        "id": "54c8874d23fbfe97",
+        "type": "link out",
+        "z": "9cbfefb5395ca356",
+        "name": "link out 10",
+        "mode": "return",
+        "links": [],
+        "x": 985,
+        "y": 960,
+        "wires": []
+    },
+    {
+        "id": "791c869ee163e4c5",
+        "type": "switch",
+        "z": "9cbfefb5395ca356",
+        "name": "Result Status?",
+        "property": "statusCode",
+        "propertyType": "msg",
+        "rules": [
+            {
+                "t": "eq",
+                "v": "200",
+                "vt": "num"
+            },
+            {
+                "t": "eq",
+                "v": "429",
+                "vt": "num"
+            },
+            {
+                "t": "else"
+            }
+        ],
+        "checkall": "true",
+        "repair": false,
+        "outputs": 3,
+        "x": 2260,
+        "y": 200,
+        "wires": [
+            [
+                "daa95f347d9a1d4a"
+            ],
+            [
+                "a0d1ee314482be70"
+            ],
+            [
+                "8d4958d03cd05e52"
+            ]
+        ]
+    },
+    {
+        "id": "6700f73db5c2aa7a",
+        "type": "delay",
+        "z": "9cbfefb5395ca356",
+        "name": "",
+        "pauseType": "delayv",
+        "timeout": "5",
+        "timeoutUnits": "seconds",
+        "rate": "1",
+        "nbRateUnits": "1",
+        "rateUnits": "second",
+        "randomFirst": "1",
+        "randomLast": "5",
+        "randomUnits": "seconds",
+        "drop": false,
+        "allowrate": false,
+        "outputs": 1,
+        "x": 2700,
+        "y": 260,
+        "wires": [
+            [
+                "3946faf3323583f4"
+            ]
+        ]
+    },
+    {
+        "id": "a0d1ee314482be70",
+        "type": "function",
+        "z": "9cbfefb5395ca356",
+        "name": "Rate Limited",
+        "func": "msg.delay = (msg.headers[\"x-ratelimit-reset\"] || 5) * 1000\nnode.warn(\"rate limiting applied\")\nreturn msg;",
+        "outputs": 1,
+        "timeout": "",
+        "noerr": 0,
+        "initialize": "",
+        "finalize": "",
+        "libs": [],
+        "x": 2530,
+        "y": 260,
+        "wires": [
+            [
+                "6700f73db5c2aa7a"
+            ]
+        ]
+    },
+    {
+        "id": "3946faf3323583f4",
+        "type": "change",
+        "z": "9cbfefb5395ca356",
+        "name": "Retry",
+        "rules": [
+            {
+                "t": "delete",
+                "p": "delay",
+                "pt": "msg"
+            },
+            {
+                "t": "delete",
+                "p": "statusCode",
+                "pt": "msg"
+            }
+        ],
+        "action": "",
+        "property": "",
+        "from": "",
+        "to": "",
+        "reg": false,
+        "x": 2850,
+        "y": 260,
+        "wires": [
+            [
+                "ce0ef901bbebb9cb"
+            ]
+        ]
+    },
+    {
+        "id": "f50386f78f2b2765",
+        "type": "comment",
+        "z": "9cbfefb5395ca356",
+        "name": "Archive",
+        "info": "",
+        "x": 110,
+        "y": 580,
+        "wires": []
+    },
+    {
+        "id": "74ffa32ac3ed40f1",
+        "type": "function",
+        "z": "9cbfefb5395ca356",
+        "name": "Set URI",
+        "func": "msg.payload.uri = \"/api/message-finder/get-message-info\"\nvar data = {\n        data: [\n        {\n            id: msg.payload.data.id\n        }\n    ]\n}\n\nmsg.payload.data = data\nreturn msg;",
+        "outputs": 1,
+        "noerr": 0,
+        "initialize": "",
+        "finalize": "",
+        "libs": [],
+        "x": 420,
+        "y": 640,
+        "wires": [
+            [
+                "7bf0dfd93338b68a"
+            ]
+        ]
+    },
+    {
+        "id": "63f9796ff3fcc9b8",
+        "type": "link in",
+        "z": "9cbfefb5395ca356",
+        "name": "Get Message Detail",
+        "links": [],
+        "x": 230,
+        "y": 640,
+        "wires": [
+            [
+                "74ffa32ac3ed40f1"
+            ]
+        ],
+        "l": true
+    },
+    {
+        "id": "7bf0dfd93338b68a",
+        "type": "link call",
+        "z": "9cbfefb5395ca356",
+        "name": "",
+        "links": [
+            "13229fc558500bb1"
+        ],
+        "linkType": "static",
+        "timeout": "30",
+        "x": 600,
+        "y": 640,
+        "wires": [
+            [
+                "e13d3d7816515b7c"
+            ]
+        ]
+    },
+    {
+        "id": "e13d3d7816515b7c",
+        "type": "link call",
+        "z": "9cbfefb5395ca356",
+        "name": "",
+        "links": [
+            "ddbdfaaca9da7739"
+        ],
+        "linkType": "static",
+        "timeout": "30",
+        "x": 840,
+        "y": 640,
+        "wires": [
+            [
+                "9ec9f0dac2498dae"
+            ]
+        ]
+    },
+    {
+        "id": "9ec9f0dac2498dae",
+        "type": "link out",
+        "z": "9cbfefb5395ca356",
+        "name": "link out 11",
+        "mode": "return",
+        "links": [],
+        "x": 1005,
+        "y": 640,
+        "wires": []
+    },
+    {
+        "id": "b058eb6e5f65190f",
+        "type": "comment",
+        "z": "9cbfefb5395ca356",
+        "name": "Search (Message Tracking)",
+        "info": "",
+        "x": 170,
+        "y": 1040,
+        "wires": []
+    },
+    {
+        "id": "6b821c67370148a3",
+        "type": "function",
+        "z": "9cbfefb5395ca356",
+        "name": "Set URI",
+        "func": "msg.payload.uri = \"/api/message-finder/search\"\nmsg.payload.data = {\n    data: [\n        msg.payload.data\n    ]\n}\n\nreturn msg;",
+        "outputs": 1,
+        "noerr": 0,
+        "initialize": "",
+        "finalize": "",
+        "libs": [],
+        "x": 560,
+        "y": 1100,
+        "wires": [
+            [
+                "238d4c8b92ab65d5"
+            ]
+        ]
+    },
+    {
+        "id": "1a8dc6e3d5e01007",
+        "type": "link in",
+        "z": "9cbfefb5395ca356",
+        "name": "Search",
+        "links": [],
+        "x": 190,
+        "y": 1100,
+        "wires": [
+            [
+                "93a1d1789ee3636d"
+            ]
+        ],
+        "l": true
+    },
+    {
+        "id": "238d4c8b92ab65d5",
+        "type": "link call",
+        "z": "9cbfefb5395ca356",
+        "name": "",
+        "links": [
+            "13229fc558500bb1"
+        ],
+        "linkType": "static",
+        "timeout": "30",
+        "x": 740,
+        "y": 1100,
+        "wires": [
+            [
+                "8acf6cbffd6787c9"
+            ]
+        ]
+    },
+    {
+        "id": "8acf6cbffd6787c9",
+        "type": "link call",
+        "z": "9cbfefb5395ca356",
+        "name": "",
+        "links": [
+            "ddbdfaaca9da7739"
+        ],
+        "linkType": "static",
+        "timeout": "30",
+        "x": 980,
+        "y": 1100,
+        "wires": [
+            [
+                "26316bd2a7ae6adc"
+            ]
+        ]
+    },
+    {
+        "id": "b07150418d1f2471",
+        "type": "link out",
+        "z": "9cbfefb5395ca356",
+        "name": "link out 12",
+        "mode": "return",
+        "links": [],
+        "x": 1345,
+        "y": 1100,
+        "wires": []
+    },
+    {
+        "id": "26316bd2a7ae6adc",
+        "type": "function",
+        "z": "9cbfefb5395ca356",
+        "name": "Custom Parsing",
+        "func": "msg.payload = msg.payload[0].trackedEmails || []\nreturn msg;",
+        "outputs": 1,
+        "noerr": 0,
+        "initialize": "",
+        "finalize": "",
+        "libs": [],
+        "x": 1220,
+        "y": 1100,
+        "wires": [
+            [
+                "b07150418d1f2471"
+            ]
+        ]
+    },
+    {
+        "id": "93a1d1789ee3636d",
+        "type": "link call",
+        "z": "9cbfefb5395ca356",
+        "name": "",
+        "links": [
+            "811b3be6b9a3131b"
+        ],
+        "linkType": "static",
+        "timeout": "30",
+        "x": 370,
+        "y": 1100,
+        "wires": [
+            [
+                "6b821c67370148a3"
+            ]
+        ]
+    },
+    {
+        "id": "f0d63948ccf5376b",
+        "type": "function",
+        "z": "9cbfefb5395ca356",
+        "name": "Get Info",
+        "func": "msg.payload.uri = \"/api/message-finder/get-message-info\"\nmsg.payload.data = {\n    data: [msg.payload.data]\n}\nreturn msg;",
+        "outputs": 1,
+        "noerr": 0,
+        "initialize": "",
+        "finalize": "",
+        "libs": [],
+        "x": 420,
+        "y": 1140,
+        "wires": [
+            [
+                "6cad8fe4c748e440"
+            ]
+        ]
+    },
+    {
+        "id": "4fea391121f31f75",
+        "type": "link in",
+        "z": "9cbfefb5395ca356",
+        "name": "Get Message Info",
+        "links": [],
+        "x": 230,
+        "y": 1140,
+        "wires": [
+            [
+                "f0d63948ccf5376b"
+            ]
+        ],
+        "l": true
+    },
+    {
+        "id": "6cad8fe4c748e440",
+        "type": "link call",
+        "z": "9cbfefb5395ca356",
+        "name": "",
+        "links": [
+            "13229fc558500bb1"
+        ],
+        "linkType": "static",
+        "timeout": "30",
+        "x": 600,
+        "y": 1140,
+        "wires": [
+            [
+                "af8e674de84bf625"
+            ]
+        ]
+    },
+    {
+        "id": "af8e674de84bf625",
+        "type": "link call",
+        "z": "9cbfefb5395ca356",
+        "name": "",
+        "links": [
+            "ddbdfaaca9da7739"
+        ],
+        "linkType": "static",
+        "timeout": "30",
+        "x": 840,
+        "y": 1140,
+        "wires": [
+            [
+                "504fcf940bf4d383"
+            ]
+        ]
+    },
+    {
+        "id": "504fcf940bf4d383",
+        "type": "link out",
+        "z": "9cbfefb5395ca356",
+        "name": "link out 13",
+        "mode": "return",
+        "links": [],
+        "x": 1005,
+        "y": 1140,
+        "wires": []
+    },
+    {
+        "id": "985e721620890f56",
+        "type": "catch",
+        "z": "9cbfefb5395ca356",
+        "name": "",
+        "scope": null,
+        "uncaught": true,
+        "x": 1160,
+        "y": 80,
+        "wires": [
+            [
+                "d622f4b38d617297"
+            ]
+        ]
+    },
+    {
+        "id": "d622f4b38d617297",
+        "type": "switch",
+        "z": "9cbfefb5395ca356",
+        "name": "",
+        "property": "error.message",
+        "propertyType": "msg",
+        "rules": [
+            {
+                "t": "neq",
+                "v": "timeout",
+                "vt": "str"
+            }
+        ],
+        "checkall": "true",
+        "repair": false,
+        "outputs": 1,
+        "x": 1330,
+        "y": 80,
+        "wires": [
+            [
+                "f298341966b62940"
+            ]
+        ]
+    },
+    {
+        "id": "f298341966b62940",
+        "type": "debug",
+        "z": "9cbfefb5395ca356",
+        "name": "",
+        "active": true,
+        "tosidebar": true,
+        "console": false,
+        "tostatus": false,
+        "complete": "true",
+        "targetType": "full",
+        "statusVal": "",
+        "statusType": "auto",
+        "x": 1470,
+        "y": 80,
+        "wires": []
+    },
+    {
+        "id": "f3cec95681c8972f",
+        "type": "function",
+        "z": "9cbfefb5395ca356",
+        "name": "Report Errors",
+        "func": "var output = {\n    title: \"Mimecast API v2 Call Error\",\n    message: {\n        request: {\n            headers: msg.headersBackup,\n            payload: msg.payloadBackup\n        },\n        response: {\n            headers: msg.headers,\n            payload: msg.payload\n        }\n    }\n}\n\nmsg.payload = output\nreturn msg;",
+        "outputs": 1,
+        "noerr": 0,
+        "initialize": "",
+        "finalize": "",
+        "libs": [],
+        "x": 1520,
+        "y": 320,
+        "wires": [
+            [
+                "8fc1fb38db8cb13e"
+            ]
+        ]
+    },
+    {
+        "id": "8fc1fb38db8cb13e",
+        "type": "link out",
+        "z": "9cbfefb5395ca356",
+        "name": "link out 15",
+        "mode": "link",
+        "links": [
+            "0407044d45b79fa6"
+        ],
+        "x": 1645,
+        "y": 320,
+        "wires": []
+    },
+    {
+        "id": "821672b162cf45b2",
+        "type": "link in",
+        "z": "9cbfefb5395ca356",
+        "name": "SIEM Log Stream",
+        "links": [],
+        "x": 240,
+        "y": 1360,
+        "wires": [
+            [
+                "70e689b58d7f491a"
+            ]
+        ],
+        "l": true
+    },
+    {
+        "id": "e74b7818a6d3e2a5",
+        "type": "link out",
+        "z": "9cbfefb5395ca356",
+        "name": "link out 17",
+        "mode": "return",
+        "links": [],
+        "x": 715,
+        "y": 1360,
+        "wires": []
+    },
+    {
+        "id": "70e689b58d7f491a",
+        "type": "function",
+        "z": "9cbfefb5395ca356",
+        "name": "Set URI",
+        "func": "msg.payload.uri = \"/v1/siem/events/cg\"\nmsg.payload.method = \"GET\"\nreturn msg;",
+        "outputs": 1,
+        "noerr": 0,
+        "initialize": "",
+        "finalize": "",
+        "libs": [],
+        "x": 410,
+        "y": 1360,
+        "wires": [
+            [
+                "4a07b29584b8f90f"
+            ]
+        ]
+    },
+    {
+        "id": "4a07b29584b8f90f",
+        "type": "link call",
+        "z": "9cbfefb5395ca356",
+        "name": "",
+        "links": [
+            "13229fc558500bb1"
+        ],
+        "linkType": "static",
+        "timeout": "30",
+        "x": 580,
+        "y": 1360,
+        "wires": [
+            [
+                "e74b7818a6d3e2a5"
+            ]
+        ]
+    },
+    {
+        "id": "f9a9d4852bf6c0dc",
+        "type": "comment",
+        "z": "9cbfefb5395ca356",
+        "name": "Logs",
+        "info": "",
+        "x": 110,
+        "y": 1220,
+        "wires": []
+    },
+    {
+        "id": "f5fa9c2e09843636",
+        "type": "comment",
+        "z": "9cbfefb5395ca356",
+        "name": "SIEM Logs",
+        "info": "",
+        "x": 180,
+        "y": 1280,
+        "wires": []
+    },
+    {
+        "id": "2a5f7c2a5dec9724",
+        "type": "link in",
+        "z": "9cbfefb5395ca356",
+        "name": "Report Error",
+        "links": [],
+        "x": 1330,
+        "y": 320,
+        "wires": [
+            [
+                "f3cec95681c8972f"
+            ]
+        ],
+        "l": true
+    },
+    {
+        "id": "ddf5ced95f237131",
+        "type": "link in",
+        "z": "9cbfefb5395ca356",
+        "name": "Get Message Part",
+        "links": [],
+        "x": 230,
+        "y": 700,
+        "wires": [
+            [
+                "eee810f5b0db869a"
+            ]
+        ],
+        "l": true
+    },
+    {
+        "id": "eee810f5b0db869a",
+        "type": "function",
+        "z": "9cbfefb5395ca356",
+        "name": "Set URI",
+        "func": "msg.payload.uri = \"/api/archive/get-message-part\"\nvar data = msg.payload.data || []\n\nif (!Array.isArray(data)) {\n    data = [data]\n}\n\nmsg.payload.data = {\n    data: data\n}\nreturn msg;",
+        "outputs": 1,
+        "noerr": 0,
+        "initialize": "",
+        "finalize": "",
+        "libs": [],
+        "x": 420,
+        "y": 700,
+        "wires": [
+            [
+                "5163625bdff89886"
+            ]
+        ]
+    },
+    {
+        "id": "5163625bdff89886",
+        "type": "link call",
+        "z": "9cbfefb5395ca356",
+        "name": "",
+        "links": [
+            "13229fc558500bb1"
+        ],
+        "linkType": "static",
+        "timeout": "30",
+        "x": 600,
+        "y": 700,
+        "wires": [
+            [
+                "a1615c6cb78f2c4a"
+            ]
+        ]
+    },
+    {
+        "id": "a1615c6cb78f2c4a",
+        "type": "link call",
+        "z": "9cbfefb5395ca356",
+        "name": "",
+        "links": [
+            "ddbdfaaca9da7739"
+        ],
+        "linkType": "static",
+        "timeout": "30",
+        "x": 840,
+        "y": 700,
+        "wires": [
+            [
+                "f19ea0e8caf2467e"
+            ]
+        ]
+    },
+    {
+        "id": "f19ea0e8caf2467e",
+        "type": "link out",
+        "z": "9cbfefb5395ca356",
+        "name": "link out 26",
+        "mode": "return",
+        "links": [],
+        "x": 1005,
+        "y": 700,
+        "wires": []
+    },
+    {
+        "id": "71a645b76f74da83",
+        "type": "link in",
+        "z": "9cbfefb5395ca356",
+        "name": "Get RFC822 Message",
+        "links": [],
+        "x": 240,
+        "y": 740,
+        "wires": [
+            [
+                "582686f9c977a3b4"
+            ]
+        ],
+        "l": true
+    },
+    {
+        "id": "582686f9c977a3b4",
+        "type": "function",
+        "z": "9cbfefb5395ca356",
+        "name": "Set Params",
+        "func": "var output = {\n    account: msg.payload.account,\n    data: {\n        type: \"RFC822\",\n        context: msg.payload.version || \"RECEIVED\",\n        id: msg.payload.id\n    }\n}\n\nmsg.payload = output\nreturn msg;",
+        "outputs": 1,
+        "noerr": 0,
+        "initialize": "",
+        "finalize": "",
+        "libs": [],
+        "x": 450,
+        "y": 740,
+        "wires": [
+            [
+                "8b4200e43d9e21c1"
+            ]
+        ]
+    },
+    {
+        "id": "8b4200e43d9e21c1",
+        "type": "link call",
+        "z": "9cbfefb5395ca356",
+        "name": "",
+        "links": [
+            "ddf5ced95f237131"
+        ],
+        "linkType": "static",
+        "timeout": "30",
+        "x": 650,
+        "y": 740,
+        "wires": [
+            [
+                "a3e755adc1c322d0"
+            ]
+        ]
+    },
+    {
+        "id": "9031533543eb9b1e",
+        "type": "link out",
+        "z": "9cbfefb5395ca356",
+        "name": "link out 27",
+        "mode": "return",
+        "links": [],
+        "x": 1625,
+        "y": 740,
+        "wires": []
+    },
+    {
+        "id": "a3e755adc1c322d0",
+        "type": "function",
+        "z": "9cbfefb5395ca356",
+        "name": "Get URLs",
+        "func": "msg.payload = msg.payload[0].urls\nreturn msg;",
+        "outputs": 1,
+        "noerr": 0,
+        "initialize": "",
+        "finalize": "",
+        "libs": [],
+        "x": 840,
+        "y": 740,
+        "wires": [
+            [
+                "bd304a55d41a3d9b"
+            ]
+        ]
+    },
+    {
+        "id": "bd304a55d41a3d9b",
+        "type": "split",
+        "z": "9cbfefb5395ca356",
+        "name": "",
+        "splt": "\\n",
+        "spltType": "str",
+        "arraySplt": 1,
+        "arraySpltType": "len",
+        "stream": false,
+        "addname": "",
+        "x": 990,
+        "y": 740,
+        "wires": [
+            [
+                "2759758de5e73e90"
+            ]
+        ]
+    },
+    {
+        "id": "069d0ebf1eb16141",
+        "type": "http request",
+        "z": "9cbfefb5395ca356",
+        "name": "",
+        "method": "GET",
+        "ret": "txt",
+        "paytoqs": "ignore",
+        "url": "",
+        "tls": "25f8f84a.4e7f98",
+        "persist": true,
+        "proxy": "",
+        "insecureHTTPParser": true,
+        "authType": "",
+        "senderr": false,
+        "headers": [
+            {
+                "keyType": "other",
+                "keyValue": "Accept",
+                "valueType": "other",
+                "valueValue": "*/*"
+            }
+        ],
+        "x": 1370,
+        "y": 740,
+        "wires": [
+            [
+                "9e504e336d0332c0"
+            ]
+        ]
+    },
+    {
+        "id": "9e504e336d0332c0",
+        "type": "join",
+        "z": "9cbfefb5395ca356",
+        "name": "",
+        "mode": "auto",
+        "build": "object",
+        "property": "payload",
+        "propertyType": "msg",
+        "key": "topic",
+        "joiner": "\\n",
+        "joinerType": "str",
+        "accumulate": "false",
+        "timeout": "",
+        "count": "",
+        "reduceRight": false,
+        "x": 1530,
+        "y": 740,
+        "wires": [
+            [
+                "9031533543eb9b1e"
+            ]
+        ]
+    },
+    {
+        "id": "2759758de5e73e90",
+        "type": "change",
+        "z": "9cbfefb5395ca356",
+        "name": "",
+        "rules": [
+            {
+                "t": "move",
+                "p": "payload",
+                "pt": "msg",
+                "to": "url",
+                "tot": "msg"
+            }
+        ],
+        "action": "",
+        "property": "",
+        "from": "",
+        "to": "",
+        "reg": false,
+        "x": 1170,
+        "y": 740,
+        "wires": [
+            [
+                "069d0ebf1eb16141"
+            ]
+        ]
+    },
+    {
+        "id": "5ecf42f8ef6f2d81",
+        "type": "switch",
+        "z": "9cbfefb5395ca356",
+        "name": "Method?",
+        "property": "method",
+        "propertyType": "msg",
+        "rules": [
+            {
+                "t": "regex",
+                "v": "get",
+                "vt": "str",
+                "case": true
+            },
+            {
+                "t": "else"
+            }
+        ],
+        "checkall": "true",
+        "repair": false,
+        "outputs": 2,
+        "x": 1520,
+        "y": 160,
+        "wires": [
+            [
+                "7a7c08d05a1da470"
+            ],
+            [
+                "f9892a610975e64e"
+            ]
+        ]
+    },
+    {
+        "id": "77cc9025a5d053ac",
+        "type": "http request",
+        "z": "9cbfefb5395ca356",
+        "name": "",
+        "method": "GET",
+        "ret": "txt",
+        "paytoqs": "query",
+        "url": "",
+        "tls": "25f8f84a.4e7f98",
+        "persist": false,
+        "proxy": "",
+        "insecureHTTPParser": false,
+        "authType": "",
+        "senderr": false,
+        "headers": [],
+        "x": 1910,
+        "y": 160,
+        "wires": [
+            [
+                "f78335b4b47e2d70"
+            ]
+        ]
+    },
+    {
+        "id": "7a7c08d05a1da470",
+        "type": "change",
+        "z": "9cbfefb5395ca356",
+        "name": "",
+        "rules": [
+            {
+                "t": "delete",
+                "p": "method",
+                "pt": "msg"
+            },
+            {
+                "t": "set",
+                "p": "payload",
+                "pt": "msg",
+                "to": "data",
+                "tot": "msg"
+            }
+        ],
+        "action": "",
+        "property": "",
+        "from": "",
+        "to": "",
+        "reg": false,
+        "x": 1700,
+        "y": 160,
+        "wires": [
+            [
+                "77cc9025a5d053ac",
+                "eb8cccecc907a12c"
+            ]
+        ]
+    },
+    {
+        "id": "f78335b4b47e2d70",
+        "type": "json",
+        "z": "9cbfefb5395ca356",
+        "name": "",
+        "property": "payload",
+        "action": "obj",
+        "pretty": false,
+        "x": 2090,
+        "y": 200,
+        "wires": [
+            [
+                "791c869ee163e4c5",
+                "74f1c249007bcb56"
+            ]
+        ]
+    },
+    {
+        "id": "5c604802209b64f2",
+        "type": "catch",
+        "z": "9cbfefb5395ca356",
+        "name": "",
+        "scope": [
+            "f78335b4b47e2d70"
+        ],
+        "uncaught": false,
+        "x": 2090,
+        "y": 160,
+        "wires": [
+            [
+                "791c869ee163e4c5",
+                "74f1c249007bcb56"
+            ]
+        ]
+    },
+    {
+        "id": "0bae4d5eb047a07c",
+        "type": "link in",
+        "z": "9cbfefb5395ca356",
+        "name": "SIEM Log Batch Files",
+        "links": [],
+        "x": 260,
+        "y": 1400,
+        "wires": [
+            [
+                "6f6ed4810c9b3b13"
+            ]
+        ],
+        "l": true
+    },
+    {
+        "id": "6f6ed4810c9b3b13",
+        "type": "function",
+        "z": "9cbfefb5395ca356",
+        "name": "Set URI",
+        "func": "var msg2 = {\n    omsg: msg,\n    payload: msg.payload\n}\n\nmsg2.payload.uri = \"/v1/siem/batch/events/cg\"\nmsg2.payload.method = \"GET\"\nmsg2.type = msg.payload.data.type\nmsg2.request = msg.payload\nreturn msg2;",
+        "outputs": 1,
+        "timeout": "",
+        "noerr": 0,
+        "initialize": "",
+        "finalize": "",
+        "libs": [],
+        "x": 460,
+        "y": 1400,
+        "wires": [
+            [
+                "3de96f29e30a1e53"
+            ]
+        ]
+    },
+    {
+        "id": "3de96f29e30a1e53",
+        "type": "link call",
+        "z": "9cbfefb5395ca356",
+        "name": "",
+        "links": [
+            "13229fc558500bb1"
+        ],
+        "linkType": "static",
+        "timeout": "30",
+        "x": 640,
+        "y": 1400,
+        "wires": [
+            [
+                "3f671b13714c538d"
+            ]
+        ]
+    },
+    {
+        "id": "3f671b13714c538d",
+        "type": "function",
+        "z": "9cbfefb5395ca356",
+        "name": "Format output",
+        "func": "var msg2 = msg.omsg\n\nmsg2.payload = {\n    request: msg.request.data,\n    files: msg.payload[0].value\n}\nmsg2.payload.request.nextPage = msg.payload[0][\"@nextPage\"]\n\nreturn msg2;",
+        "outputs": 1,
+        "timeout": "",
+        "noerr": 0,
+        "initialize": "",
+        "finalize": "",
+        "libs": [],
+        "x": 840,
+        "y": 1400,
+        "wires": [
+            [
+                "ce49e970017ec2f3"
+            ]
+        ]
+    },
+    {
+        "id": "ce49e970017ec2f3",
+        "type": "link out",
+        "z": "9cbfefb5395ca356",
+        "name": "link out 30",
+        "mode": "return",
+        "links": [],
+        "x": 975,
+        "y": 1400,
+        "wires": []
+    },
+    {
+        "id": "fa8ef017f5042d2f",
+        "type": "debug",
+        "z": "9cbfefb5395ca356",
+        "name": "API Debug Response",
+        "active": true,
+        "tosidebar": true,
+        "console": false,
+        "tostatus": false,
+        "complete": "true",
+        "targetType": "full",
+        "statusVal": "",
+        "statusType": "auto",
+        "x": 2300,
+        "y": 240,
+        "wires": []
+    },
+    {
+        "id": "0aca8774c0b6214f",
+        "type": "inject",
+        "z": "9cbfefb5395ca356",
+        "name": "Enable API Call Debug",
+        "props": [
+            {
+                "p": "payload"
+            },
+            {
+                "p": "topic",
+                "vt": "str"
+            }
+        ],
+        "repeat": "",
+        "crontab": "",
+        "once": false,
+        "onceDelay": 0.1,
+        "topic": "Enable API Call Debug",
+        "payload": "true",
+        "payloadType": "bool",
+        "x": 620,
+        "y": 60,
+        "wires": [
+            [
+                "2240cb7c4c6c8e8b"
+            ]
+        ]
+    },
+    {
+        "id": "74f1c249007bcb56",
+        "type": "switch",
+        "z": "9cbfefb5395ca356",
+        "name": "Debug?",
+        "property": "apiDebug",
+        "propertyType": "flow",
+        "rules": [
+            {
+                "t": "true"
+            }
+        ],
+        "checkall": "true",
+        "repair": false,
+        "outputs": 1,
+        "x": 2100,
+        "y": 240,
+        "wires": [
+            [
+                "fa8ef017f5042d2f"
+            ]
+        ]
+    },
+    {
+        "id": "2240cb7c4c6c8e8b",
+        "type": "change",
+        "z": "9cbfefb5395ca356",
+        "name": "",
+        "rules": [
+            {
+                "t": "set",
+                "p": "apiDebug",
+                "pt": "flow",
+                "to": "payload",
+                "tot": "msg"
+            }
+        ],
+        "action": "",
+        "property": "",
+        "from": "",
+        "to": "",
+        "reg": false,
+        "x": 850,
+        "y": 80,
+        "wires": [
+            []
+        ]
+    },
+    {
+        "id": "4e570455a283a21f",
+        "type": "inject",
+        "z": "9cbfefb5395ca356",
+        "name": "Disable API Call Debug",
+        "props": [
+            {
+                "p": "payload"
+            },
+            {
+                "p": "topic",
+                "vt": "str"
+            }
+        ],
+        "repeat": "",
+        "crontab": "",
+        "once": false,
+        "onceDelay": 0.1,
+        "topic": "Disable API Call Debug",
+        "payload": "false",
+        "payloadType": "bool",
+        "x": 620,
+        "y": 100,
+        "wires": [
+            [
+                "2240cb7c4c6c8e8b"
+            ]
+        ]
+    },
+    {
+        "id": "c990f862dcd15c5a",
+        "type": "debug",
+        "z": "9cbfefb5395ca356",
+        "name": "API Debug Request",
+        "active": true,
+        "tosidebar": true,
+        "console": false,
+        "tostatus": false,
+        "complete": "true",
+        "targetType": "full",
+        "statusVal": "",
+        "statusType": "auto",
+        "x": 1710,
+        "y": 240,
+        "wires": []
+    },
+    {
+        "id": "eb8cccecc907a12c",
+        "type": "switch",
+        "z": "9cbfefb5395ca356",
+        "name": "Debug?",
+        "property": "apiDebug",
+        "propertyType": "flow",
+        "rules": [
+            {
+                "t": "true"
+            }
+        ],
+        "checkall": "true",
+        "repair": false,
+        "outputs": 1,
+        "x": 1520,
+        "y": 240,
+        "wires": [
+            [
+                "c990f862dcd15c5a"
+            ]
+        ]
+    },
+    {
+        "id": "3af91ab526c73201",
+        "type": "function",
+        "z": "9cbfefb5395ca356",
+        "name": "Set URI",
+        "func": "msg.payload.uri = \"/api/ttp/attachment/get-logs\"\nmsg.parseField = \"attachmentLogs\"\nreturn msg;",
+        "outputs": 1,
+        "timeout": "",
+        "noerr": 0,
+        "initialize": "",
+        "finalize": "",
+        "libs": [],
+        "x": 560,
+        "y": 1540,
+        "wires": [
+            [
+                "771a4509d6136586"
+            ]
+        ]
+    },
+    {
+        "id": "771a4509d6136586",
+        "type": "link call",
+        "z": "9cbfefb5395ca356",
+        "name": "",
+        "links": [
+            "13229fc558500bb1"
+        ],
+        "linkType": "static",
+        "timeout": "30",
+        "x": 740,
+        "y": 1540,
+        "wires": [
+            [
+                "f451edcdbeb23bce"
+            ]
+        ]
+    },
+    {
+        "id": "a521328c496bc1b5",
+        "type": "link in",
+        "z": "9cbfefb5395ca356",
+        "name": "Get TTP Attachment Protection Logs",
+        "links": [],
+        "x": 310,
+        "y": 1540,
+        "wires": [
+            [
+                "3af91ab526c73201"
+            ]
+        ],
+        "l": true
+    },
+    {
+        "id": "244eae5f6c698a6f",
+        "type": "link out",
+        "z": "9cbfefb5395ca356",
+        "name": "link out 31",
+        "mode": "return",
+        "links": [],
+        "x": 1145,
+        "y": 1540,
+        "wires": []
+    },
+    {
+        "id": "56eacf3d99c7fadf",
+        "type": "comment",
+        "z": "9cbfefb5395ca356",
+        "name": "Targeted Threat Proteection",
+        "info": "",
+        "x": 240,
+        "y": 1480,
+        "wires": []
+    },
+    {
+        "id": "f451edcdbeb23bce",
+        "type": "link call",
+        "z": "9cbfefb5395ca356",
+        "name": "",
+        "links": [
+            "ddbdfaaca9da7739"
+        ],
+        "linkType": "static",
+        "timeout": "30",
+        "x": 980,
+        "y": 1540,
+        "wires": [
+            [
+                "244eae5f6c698a6f"
+            ]
+        ]
+    },
+    {
+        "id": "1089e1e8f2735b96",
+        "type": "link in",
+        "z": "9cbfefb5395ca356",
+        "name": "Get TTP Impersonation Protection Logs",
+        "links": [],
+        "x": 310,
+        "y": 1580,
+        "wires": [
+            [
+                "a2ac7cc374045fa3"
+            ]
+        ],
+        "l": true
+    },
+    {
+        "id": "a2ac7cc374045fa3",
+        "type": "function",
+        "z": "9cbfefb5395ca356",
+        "name": "Set URI",
+        "func": "msg.payload.uri = \"/api/ttp/impersonation/get-logs\"\nmsg.parseField = \"impersonationLogs\"\nreturn msg;",
+        "outputs": 1,
+        "timeout": "",
+        "noerr": 0,
+        "initialize": "",
+        "finalize": "",
+        "libs": [],
+        "x": 560,
+        "y": 1580,
+        "wires": [
+            [
+                "6d4aece53641ef2a"
+            ]
+        ]
+    },
+    {
+        "id": "6d4aece53641ef2a",
+        "type": "link call",
+        "z": "9cbfefb5395ca356",
+        "name": "",
+        "links": [
+            "13229fc558500bb1"
+        ],
+        "linkType": "static",
+        "timeout": "30",
+        "x": 740,
+        "y": 1580,
+        "wires": [
+            [
+                "a15a472e729476b3"
+            ]
+        ]
+    },
+    {
+        "id": "a15a472e729476b3",
+        "type": "link call",
+        "z": "9cbfefb5395ca356",
+        "name": "",
+        "links": [
+            "ddbdfaaca9da7739"
+        ],
+        "linkType": "static",
+        "timeout": "30",
+        "x": 980,
+        "y": 1580,
+        "wires": [
+            [
+                "41f27c0025c32e41"
+            ]
+        ]
+    },
+    {
+        "id": "41f27c0025c32e41",
+        "type": "link out",
+        "z": "9cbfefb5395ca356",
+        "name": "link out 32",
+        "mode": "return",
+        "links": [],
+        "x": 1145,
+        "y": 1580,
+        "wires": []
+    },
+    {
+        "id": "637446a4a2c92ed0",
+        "type": "link in",
+        "z": "9cbfefb5395ca356",
+        "name": "Get TTP URL Protection Logs",
+        "links": [],
+        "x": 280,
+        "y": 1620,
+        "wires": [
+            [
+                "43d3bd05ea73d86c"
+            ]
+        ],
+        "l": true
+    },
+    {
+        "id": "43d3bd05ea73d86c",
+        "type": "function",
+        "z": "9cbfefb5395ca356",
+        "name": "Set URI",
+        "func": "msg.payload.uri = \"/api/ttp/url/get-logs\"\nreturn msg;",
+        "outputs": 1,
+        "timeout": "",
+        "noerr": 0,
+        "initialize": "",
+        "finalize": "",
+        "libs": [],
+        "x": 500,
+        "y": 1620,
+        "wires": [
+            [
+                "ecb83efd17cf6d27"
+            ]
+        ]
+    },
+    {
+        "id": "ecb83efd17cf6d27",
+        "type": "link call",
+        "z": "9cbfefb5395ca356",
+        "name": "",
+        "links": [
+            "13229fc558500bb1"
+        ],
+        "linkType": "static",
+        "timeout": "30",
+        "x": 680,
+        "y": 1620,
+        "wires": [
+            [
+                "b7eadf574a7443fa"
+            ]
+        ]
+    },
+    {
+        "id": "b7eadf574a7443fa",
+        "type": "link call",
+        "z": "9cbfefb5395ca356",
+        "name": "",
+        "links": [
+            "ddbdfaaca9da7739"
+        ],
+        "linkType": "static",
+        "timeout": "30",
+        "x": 920,
+        "y": 1620,
+        "wires": [
+            [
+                "b065e618e5df4b7f"
+            ]
+        ]
+    },
+    {
+        "id": "b065e618e5df4b7f",
+        "type": "link out",
+        "z": "9cbfefb5395ca356",
+        "name": "link out 33",
+        "mode": "return",
+        "links": [],
+        "x": 1085,
+        "y": 1620,
+        "wires": []
+    },
+    {
+        "id": "9aaaed7675649868",
+        "type": "link in",
+        "z": "9cbfefb5395ca356",
+        "name": "Get DLP Logs",
+        "links": [],
+        "x": 230,
+        "y": 1760,
+        "wires": [
+            [
+                "c75d4670ccc0b6f4"
+            ]
+        ],
+        "l": true
+    },
+    {
+        "id": "c75d4670ccc0b6f4",
+        "type": "function",
+        "z": "9cbfefb5395ca356",
+        "name": "Set URI",
+        "func": "msg.payload.uri = \"/api/dlp/get-logs\"\nreturn msg;",
+        "outputs": 1,
+        "timeout": "",
+        "noerr": 0,
+        "initialize": "",
+        "finalize": "",
+        "libs": [],
+        "x": 400,
+        "y": 1760,
+        "wires": [
+            [
+                "b2f75adb1efa703a"
+            ]
+        ]
+    },
+    {
+        "id": "b2f75adb1efa703a",
+        "type": "link call",
+        "z": "9cbfefb5395ca356",
+        "name": "",
+        "links": [
+            "13229fc558500bb1"
+        ],
+        "linkType": "static",
+        "timeout": "30",
+        "x": 580,
+        "y": 1760,
+        "wires": [
+            [
+                "7cb212325865406c"
+            ]
+        ]
+    },
+    {
+        "id": "7cb212325865406c",
+        "type": "link call",
+        "z": "9cbfefb5395ca356",
+        "name": "",
+        "links": [
+            "ddbdfaaca9da7739"
+        ],
+        "linkType": "static",
+        "timeout": "30",
+        "x": 820,
+        "y": 1760,
+        "wires": [
+            [
+                "43718b07c9dfe015"
+            ]
+        ]
+    },
+    {
+        "id": "43718b07c9dfe015",
+        "type": "link out",
+        "z": "9cbfefb5395ca356",
+        "name": "link out 34",
+        "mode": "return",
+        "links": [],
+        "x": 985,
+        "y": 1760,
+        "wires": []
+    },
+    {
+        "id": "c38e1b6ff86a39ed",
+        "type": "link in",
+        "z": "9cbfefb5395ca356",
+        "name": "Get Rejection Logs",
+        "links": [],
+        "x": 250,
+        "y": 1800,
+        "wires": [
+            [
+                "897e01a1d1c72143"
+            ]
+        ],
+        "l": true
+    },
+    {
+        "id": "40125595f8e205d9",
+        "type": "function",
+        "z": "9cbfefb5395ca356",
+        "name": "Set URI",
+        "func": "msg.payload.uri = \"/api/gateway/get-rejections\"\nreturn msg;",
+        "outputs": 1,
+        "timeout": "",
+        "noerr": 0,
+        "initialize": "",
+        "finalize": "",
+        "libs": [],
+        "x": 660,
+        "y": 1800,
+        "wires": [
+            [
+                "30aeb3dfb157939c"
+            ]
+        ]
+    },
+    {
+        "id": "30aeb3dfb157939c",
+        "type": "link call",
+        "z": "9cbfefb5395ca356",
+        "name": "",
+        "links": [
+            "13229fc558500bb1"
+        ],
+        "linkType": "static",
+        "timeout": "30",
+        "x": 840,
+        "y": 1800,
+        "wires": [
+            [
+                "063bfc99a06cd82c"
+            ]
+        ]
+    },
+    {
+        "id": "063bfc99a06cd82c",
+        "type": "link call",
+        "z": "9cbfefb5395ca356",
+        "name": "",
+        "links": [
+            "ddbdfaaca9da7739"
+        ],
+        "linkType": "static",
+        "timeout": "30",
+        "x": 1080,
+        "y": 1800,
+        "wires": [
+            [
+                "cf1ed901052b654a"
+            ]
+        ]
+    },
+    {
+        "id": "cf1ed901052b654a",
+        "type": "link out",
+        "z": "9cbfefb5395ca356",
+        "name": "link out 35",
+        "mode": "return",
+        "links": [],
+        "x": 1245,
+        "y": 1800,
+        "wires": []
+    },
+    {
+        "id": "d3bdf0caa5c52d26",
+        "type": "link in",
+        "z": "9cbfefb5395ca356",
+        "name": "Get Message Release Logs",
+        "links": [],
+        "x": 280,
+        "y": 1840,
+        "wires": [
+            [
+                "93baf5ac1c6e2cf4"
+            ]
+        ],
+        "l": true
+    },
+    {
+        "id": "93baf5ac1c6e2cf4",
+        "type": "function",
+        "z": "9cbfefb5395ca356",
+        "name": "Set URI",
+        "func": "msg.payload.uri = \"/api/gateway/get-held-release-logs\"\nreturn msg;",
+        "outputs": 1,
+        "timeout": "",
+        "noerr": 0,
+        "initialize": "",
+        "finalize": "",
+        "libs": [],
+        "x": 500,
+        "y": 1840,
+        "wires": [
+            [
+                "fc8129f60d5838c0"
+            ]
+        ]
+    },
+    {
+        "id": "fc8129f60d5838c0",
+        "type": "link call",
+        "z": "9cbfefb5395ca356",
+        "name": "",
+        "links": [
+            "13229fc558500bb1"
+        ],
+        "linkType": "static",
+        "timeout": "30",
+        "x": 680,
+        "y": 1840,
+        "wires": [
+            [
+                "f9deee3d56e1fbd6"
+            ]
+        ]
+    },
+    {
+        "id": "f9deee3d56e1fbd6",
+        "type": "link call",
+        "z": "9cbfefb5395ca356",
+        "name": "",
+        "links": [
+            "ddbdfaaca9da7739"
+        ],
+        "linkType": "static",
+        "timeout": "30",
+        "x": 920,
+        "y": 1840,
+        "wires": [
+            [
+                "f10127cfe4a3c833"
+            ]
+        ]
+    },
+    {
+        "id": "f10127cfe4a3c833",
+        "type": "link out",
+        "z": "9cbfefb5395ca356",
+        "name": "link out 36",
+        "mode": "return",
+        "links": [],
+        "x": 1085,
+        "y": 1840,
+        "wires": []
+    },
+    {
+        "id": "897e01a1d1c72143",
+        "type": "link call",
+        "z": "9cbfefb5395ca356",
+        "name": "",
+        "links": [
+            "811b3be6b9a3131b"
+        ],
+        "linkType": "static",
+        "timeout": "30",
+        "x": 470,
+        "y": 1800,
+        "wires": [
+            [
+                "40125595f8e205d9"
+            ]
+        ]
+    },
+    {
+        "id": "f9892a610975e64e",
+        "type": "function",
+        "z": "9cbfefb5395ca356",
+        "name": "Format Body",
+        "func": "msg.payload = {\n    meta: msg.meta,\n    data: msg.data\n}\n\nif (!Array.isArray(msg.payload.data)) msg.payload.data = [msg.payload.data]\n\nif (Object.keys(msg.payload).length > 0) {\n    if (Object.keys(msg.payload.meta).length === 0) delete msg.payload.meta\n    if (Object.keys(msg.payload.data).length === 0) delete msg.payload.data\n    if (msg.payload.data.length === 1 && Object.keys(msg.payload.data[0]).length === 0) delete msg.payload.data\n}\n\nreturn msg;",
+        "outputs": 1,
+        "timeout": 0,
+        "noerr": 0,
+        "initialize": "",
+        "finalize": "",
+        "libs": [],
+        "x": 1690,
+        "y": 200,
+        "wires": [
+            [
+                "eb8cccecc907a12c",
+                "1e9b825b6ea9931f"
+            ]
+        ]
+    },
+    {
+        "id": "daa95f347d9a1d4a",
+        "type": "function",
+        "z": "9cbfefb5395ca356",
+        "name": "Save Results",
+        "func": "if (!msg.allResults) msg.allResults = []\nmsg.allResults.push(msg.payload)\nreturn msg;",
+        "outputs": 1,
+        "timeout": 0,
+        "noerr": 0,
+        "initialize": "",
+        "finalize": "",
+        "libs": [],
+        "x": 2450,
+        "y": 180,
+        "wires": [
+            [
+                "6562d0365f25f0c5"
+            ]
+        ]
+    },
+    {
+        "id": "8d4958d03cd05e52",
+        "type": "function",
+        "z": "9cbfefb5395ca356",
+        "name": "Error Response",
+        "func": "msg.payload = {\n    fail: [{\n        responseCode: msg.statusCode\n    }]\n}\nreturn msg;",
+        "outputs": 1,
+        "timeout": 0,
+        "noerr": 0,
+        "initialize": "",
+        "finalize": "",
+        "libs": [],
+        "x": 2520,
+        "y": 220,
+        "wires": [
+            [
+                "daa95f347d9a1d4a"
+            ]
+        ]
+    },
+    {
+        "id": "25f8f84a.4e7f98",
+        "type": "tls-config",
+        "name": "Verify Certificate",
+        "cert": "",
+        "key": "",
+        "ca": "",
+        "certname": "",
+        "keyname": "",
+        "caname": "",
+        "servername": "",
+        "verifyservercert": true
+    }
+]
