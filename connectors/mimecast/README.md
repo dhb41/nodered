@@ -18,9 +18,10 @@ What you can now do is start to create your own flows (ideally, on a different t
 Here's what these examples do:
 
 1. This uses the credential module to securely store your API keys:
+
 ![image003](https://github.com/dhb41/nodered/assets/141678879/118c6dd0-a141-499d-a3bc-b8e482c923ec)
 
-2. This is a basic example to interact with the API to get account info. When you trigger the flow, the "Add Auth Info" (the flow in Step 1) will add connectivity info, including API keys. Then passes it on to the "Get Account" linked flow, which will make the API call on the other flow, and output the results:
+3. This is a basic example to interact with the API to get account info. When you trigger the flow, the "Add Auth Info" (the flow in Step 1) will add connectivity info, including API keys. Then passes it on to the "Get Account" linked flow, which will make the API call on the other flow, and output the results:
 
 ![image004](https://github.com/dhb41/nodered/assets/141678879/7ecb851e-b940-4de0-8823-dd2889159e80)
 
