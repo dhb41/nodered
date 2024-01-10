@@ -23,11 +23,11 @@ Here's what these examples do:
 
 3. This is a basic example to interact with the API to get account info. When you trigger the flow, the "Add Auth Info" (the flow in Step 1) will add connectivity info, including API keys. Then passes it on to the "Get Account" linked flow, which will make the API call on the other flow, and output the results:
 
-![image004](https://github.com/dhb41/nodered/assets/141678879/7ecb851e-b940-4de0-8823-dd2889159e80)
+![image004](https://github.com/dhb41/nodered/assets/141678879/bab476b9-b1ca-4fc7-af52-4037b5cd2901)
 
-3. This is another basic example to get TTP-IP logs. When you trigger the flow, the "Add Auth Info" does it's thing again, but then passes it to a different linked flow, which will return the impersonation logs:
+4. This is another basic example to get TTP-IP logs. When you trigger the flow, the "Add Auth Info" does it's thing again, but then passes it to a different linked flow, which will return the impersonation logs:
 
-![image005](https://github.com/dhb41/nodered/assets/141678879/9fc27bae-94e0-40d8-8de9-34ab90f389f1)
+![image005](https://github.com/dhb41/nodered/assets/141678879/eeba89b0-3398-4195-81ee-8f9ce6940181)
 
 This one builds on top of 2 & 3, where you can actually supply some input data to alter the results you'd get (it's possible with Step 3, as well, but not required). By adding flags, filters, searches, etc. in the payload data object, you can scope the results you want returned.
 
